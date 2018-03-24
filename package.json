@@ -1,0 +1,93 @@
+{
+    "name": "vscode-importmagic",
+    "displayName": "Importmagic",
+    "description": "Python auto imports",
+    "version": "0.0.1",
+    "icon": "images/icon.png",
+    "publisher": "brainfit",
+    "author": {
+        "name": "Vladimir K Urushev"
+    },
+    "license": "SEE FILE LICENSE",
+    "engines": {
+        "vscode": "^1.17.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "python",
+        "django",
+        "import",
+        "suggestions",
+        "ctag"
+    ],
+    "activationEvents": [
+        "onLanguage:python",
+        "onCommand:importMagic.resolveImport",
+        "onCommand:importMagic.insertImport",
+        "onCommand:importMagic.findSymbols"
+    ],
+    "main": "./out/extension",
+    "contributes": {
+        "keybindings": [
+            {
+                "command": "importMagic.findSymbols",
+                "key": "ctrl+shift+space",
+                "when": "editorLangId == python"
+            }
+        ],
+        "commands": [
+            {
+                "command": "importMagic.resolveImport",
+                "title": "Resolve Imports",
+                "category": "Python Refactor"
+            },
+            {
+                "command": "importMagic.insertImport",
+                "title": "Insert Import",
+                "category": "Python Refactor"
+            },
+            {
+                "command": "importMagic.findSymbols",
+                "title": "Find Symbols",
+                "category": "Python Refactor"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "importMagic.resolveImport",
+                    "group": "Refactor",
+                    "when": "editorLangId == python"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "lint": "tslint src/**/*.ts -t verbose"
+    },
+    "dependencies": {
+        "fs-extra": "^4.0.2",
+        "lodash": "^4.17.4",
+        "iconv-lite": "^0.4.19",
+        "rxjs": "^5.5.2",
+        "tmp": "0.0.29",
+        "untildify": "^3.0.2"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.2",
+        "@types/node": "^7.0.43",
+        "@types/fs-extra": "^4.0.2",
+        "@types/lodash": "^4.14.74",
+        "@types/iconv-lite": "0.0.1",
+        "debounce": "^1.1.0",
+        "tslint": "^5.7.0",
+        "tslint-microsoft-contrib": "^5.0.1",
+        "vscode": "^1.1.5"
+    }
+}

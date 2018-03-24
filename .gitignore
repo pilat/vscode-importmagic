@@ -1,0 +1,6 @@
+images/icon.psd
+out
+node_modules
+.vscode-test/
+.vsix
+*.pyc
