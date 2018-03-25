@@ -19,15 +19,16 @@ export class PythonSettings extends EventEmitter implements IPythonSettings {
     public extraPaths: string[] = [];
 
     private workspaceRoot: vscode.Uri;
+    private disposables: vscode.Disposable[] = [];
 
     private _pythonPath: string;
     constructor(workspaceFolder?: Uri) {
         super();
         this.workspaceRoot = workspaceFolder ? workspaceFolder : vscode.Uri.file(__dirname);
-        vscode.workspace.onDidChangeConfiguration(() => {
+        this.disposables.push(vscode.workspace.onDidChangeConfiguration(() => {
             this.initializeSettings();
             setTimeout(() => this.emit('change'), 1);
-        });
+        }));
 
         this.initializeSettings();
     }
@@ -52,6 +53,19 @@ export class PythonSettings extends EventEmitter implements IPythonSettings {
         }
 
         return workspaceFolderUri;
+    }
+
+    public static dispose() {
+        if (!isTestExecution()) {
+            throw new Error('Dispose can only be called from unit tests');
+        }
+        PythonSettings.pythonSettings.forEach(item => item.dispose());
+        PythonSettings.pythonSettings.clear();
+    }
+
+    public dispose() {
+        this.disposables.forEach(disposable => disposable.dispose());
+        this.disposables = [];
     }
 
     private initializeSettings() {

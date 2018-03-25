@@ -174,14 +174,14 @@ export class ImportMagicProxy {
     }
 
     private async buildIndex(forceRebuild: boolean = false) {
-        const skipTestFolders = !isTestExecution();
+        const isTest = isTestExecution();
 
         const cmd: ICommandBuild<IResultBuild> = {
             method: MethodType.BuildIndex,
             workspacePath: this.workspacePath,
             extraPaths: this.getExtraPaths(),
-            skipTestFolders,
-            forceRebuild
+            skipTestFolders: !isTest,
+            forceRebuild: forceRebuild || isTest
         };
 
         await this.sendRequest(cmd);

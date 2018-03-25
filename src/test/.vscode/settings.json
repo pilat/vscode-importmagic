@@ -1,0 +1,6 @@
+{
+    "files.autoSave": "off",
+    "editor.formatOnSave": false,
+    "python.autoComplete.extraPaths": [],
+    "python.linting.enabled": false
+}

@@ -2,7 +2,7 @@ import * as fs from 'fs-extra';
 import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace} from 'vscode';
 import { IResultSuggestions, MethodType, ICommandSuggestions, ICommandImport, IResultImport, ISuggestionItem } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
-import { getTempFileWithDocumentContents } from '../common/utils';
+import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
 export interface ImportPathQuickPickItem extends QuickPickItem {
     module: string;
@@ -10,16 +10,18 @@ export interface ImportPathQuickPickItem extends QuickPickItem {
 }
 
 export class ImportMagicProvider implements Disposable {
-    private disposables: Disposable[] = [];
+    // private disposables: Disposable[] = [];
 
     constructor(private importMagicFactory: ImportMagicProxyFactory) {
-        this.disposables.push(commands.registerCommand('importMagic.resolveImport', this.resolveImport.bind(this)));
-        this.disposables.push(commands.registerCommand('importMagic.insertImport', this.insertImport.bind(this)));
-        this.disposables.push(workspace.onDidSaveTextDocument(this.onSave.bind(this)));
+        // if (!noReg) {
+        //     this.disposables.push(commands.registerCommand('importMagic.resolveImport', this.resolveImport.bind(this)));
+        //     this.disposables.push(commands.registerCommand('importMagic.insertImport', this.insertImport.bind(this)));
+        //     this.disposables.push(workspace.onDidSaveTextDocument(this.onSave.bind(this)));
+        // }
     }
 
     public dispose() {
-        this.disposables.forEach(disposable => disposable.dispose());
+        // this.disposables.forEach(disposable => disposable.dispose());
     }
 
     public async getImportSuggestions(sourceFile: string, unresolvedName: string): Promise<ImportPathQuickPickItem[]> {
@@ -48,14 +50,14 @@ export class ImportMagicProvider implements Disposable {
         }
     }
 
-    private async onSave(document: TextDocument) {
+    public async onSave(document: TextDocument) {
         if (document.fileName.endsWith('.py')) {
             const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
             await importMagic.rebuildIndex();
         }
     }
 
-    private async resolveImport() {
+    public async resolveImport() {
         const activeEditor = window.activeTextEditor;
         if (!activeEditor) {
             return undefined;
@@ -105,20 +107,7 @@ export class ImportMagicProvider implements Disposable {
         }
     }
 
-    private suggestionToQuickPickItem(suggestion: ISuggestionItem): ImportPathQuickPickItem {
-        const module = suggestion.module;
-        const variable = suggestion.variable;
-        const path = variable ? `from ${module} import ${variable}` : `import ${module}`;
-
-        return {
-            label: path,
-            description: '', // suggestion.score.toPrecision(3),
-            module: module,
-            variable: variable ? variable : undefined
-        };
-    }
-
-    private async insertImport(module: string, variable?: string) {
+    public async insertImport(module: string, variable?: string) {
         const activeEditor = window.activeTextEditor;
         if (!activeEditor) {
             return undefined;
@@ -151,6 +140,19 @@ export class ImportMagicProvider implements Disposable {
                 fs.unlinkSync(filePath);
             }
         }
+    }
+
+    private suggestionToQuickPickItem(suggestion: ISuggestionItem): ImportPathQuickPickItem {
+        const module = suggestion.module;
+        const variable = suggestion.variable;
+        const path = variable ? `from ${module} import ${variable}` : `import ${module}`;
+
+        return {
+            label: path,
+            description: '', // suggestion.score.toPrecision(3),
+            module: module,
+            variable: variable ? variable : undefined
+        };
     }
 
     private async updateSource(update: IResultImport) {
