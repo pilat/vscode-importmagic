@@ -18,12 +18,12 @@ As well, this extension will show suggestions from project symbols, when you pre
 
 
 
-![Demo](https://github.com/pilat/vscode-importmagic/blob/masterimages/presentation.gif?raw=true)
+![Demo](https://github.com/pilat/vscode-importmagic/blob/master/images/presentation.gif?raw=true)
 
 
 ## HOWTO
-- You must have installed python interpretor (see **python.pythonPath** in your project settings)
-- Remember: importmagic scan your files in root directory and **python.autoComplete.extraPaths** directories.
+- You must have installed python interpretor (see **"python.pythonPath"** in your project settings)
+- Remember: importmagic scan your files in root directory and **"python.autoComplete.extraPaths"** directories.
 
 
 ## License 
