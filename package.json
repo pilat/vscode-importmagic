@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {
@@ -71,14 +71,8 @@
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "lint": "tslint src/**/*.ts -t verbose",
-        
-        "test": "npm run testSingleWorkspace && npm run testMultiWorkspace",
-
-        "testSingleWorkspace": "node ./out/test/standardTest.js",
-		"testMultiWorkspace": "node ./out/test/multiRootTest.js"
+        "watch": "tsc -watch -p ./"
     },
     "extensionDependencies": [
         "ms-python.python"
@@ -90,7 +84,7 @@
         "rxjs": "^5.5.2",
         "tmp": "0.0.29",
         "untildify": "^3.0.2"
-    },    
+    },
     "devDependencies": {
         "typescript": "^2.6.2",
         "@types/node": "^7.0.43",
