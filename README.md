@@ -21,7 +21,8 @@ As well, this extension will show suggestions from project symbols, when you pre
 ![Demo](https://github.com/pilat/vscode-importmagic/blob/master/images/presentation.gif?raw=true)
 
 
-## HOWTO
+## Install notes
+- This extension need [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) extension
 - You must have installed python interpretor (see **"python.pythonPath"** in your project settings)
 - Remember: importmagic scan your files in root directory and **"python.autoComplete.extraPaths"** directories.
 

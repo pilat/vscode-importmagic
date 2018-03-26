@@ -14,7 +14,8 @@ before_install: |
   fi  
   export TRAVIS_PYTHON_PATH=`which python`
 install:
-  - yarn  
+  - yarn
+  # - code --install-extension ms-python.python
 
 script:
   - yarn run compile

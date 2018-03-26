@@ -41,7 +41,9 @@ suite('ImportMagic', () => {
 
     suiteTeardown(async () => {
         closeActiveWindows();
-        importMagicProxyFactory.dispose();
+        if (importMagicProxyFactory) {
+            importMagicProxyFactory.dispose();
+        }
         await settings.update('autoComplete.extraPaths', oldExtraPaths);
     });
 
