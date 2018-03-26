@@ -22,6 +22,10 @@
         "suggestions",
         "ctag"
     ],
+    "repository": {
+        "url": "https://github.com/pilat/vscode-importmagic.git"
+    },
+    "homepage": "https://github.com/pilat/vscode-importmagic/blob/master/README.md",
     "activationEvents": [
         "onLanguage:python",
         "onCommand:importMagic.resolveImport",
