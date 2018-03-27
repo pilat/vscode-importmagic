@@ -17,7 +17,6 @@ except:
 
 
 ITEMS_LIMIT = 50
-INDEX_FILE_TTL = 300
 
 
 class ImportMagicDaemon(object):
@@ -29,39 +28,19 @@ class ImportMagicDaemon(object):
         workspace_path = kwargs.get('workspacePath')
         extra_paths = kwargs.get('extraPaths', [])
         skip_test_folders = kwargs.get('skipTestFolders')
-        force_rebuild = kwargs.get('forceRebuild')
 
         if not workspace_path:
             raise ValueError('Empty workspacePath')
 
         paths = list(set(extra_paths + [workspace_path] + sys.path))
 
-        index_file = os.path.join(workspace_path, '.vscode', 'importmagic')
-        index_file_ts = None
-
-        try:
-            index_file_ts = os.path.getmtime(index_file)
-        except Exception:
-            pass
-        
-        if force_rebuild or not index_file_ts or time.time() - index_file_ts > INDEX_FILE_TTL:
-            if skip_test_folders:
-                blacklist_re = importmagic.index.DEFAULT_BLACKLIST_RE
-            else:
-                blacklist_re = re.compile(r'^$')
-
-            self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
-            self._index.build_index(paths)
-
-            try:
-                with open(index_file, 'w') as fd:
-                    self._index.serialize(fd)
-            except Exception:
-                pass
+        if skip_test_folders:
+            blacklist_re = importmagic.index.DEFAULT_BLACKLIST_RE
         else:
-            # Read old index
-            with open(index_file, 'r') as fd:
-                self._index = importmagic.SymbolIndex.deserialize(fd)
+            blacklist_re = re.compile(r'^$')
+
+        self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
+        self._index.build_index(paths)
 
         return dict(success=True)
 

@@ -70,7 +70,6 @@ interface ICommandBuild<T extends ICommandResult> extends ICommand<T> {
     workspacePath: string;
     extraPaths: string[];
     skipTestFolders: boolean;
-    forceRebuild: boolean;
 }
 
 export interface ICommandSuggestions<T extends ICommandResult> extends ICommand<T> {
@@ -123,7 +122,7 @@ export class ImportMagicProxy {
 
     @debounce(10000)
     public async rebuildIndex() {
-        await this.buildIndex(true);
+        await this.buildIndex();
     }
 
     private onChangeSettings() {
@@ -173,15 +172,14 @@ export class ImportMagicProxy {
         this.languageServerStarted.resolve();
     }
 
-    private async buildIndex(forceRebuild: boolean = false) {
+    private async buildIndex() {
         const isTest = isTestExecution();
 
         const cmd: ICommandBuild<IResultBuild> = {
             method: MethodType.BuildIndex,
             workspacePath: this.workspacePath,
             extraPaths: this.getExtraPaths(),
-            skipTestFolders: !isTest,
-            forceRebuild: forceRebuild || isTest
+            skipTestFolders: !isTest
         };
 
         await this.sendRequest(cmd);
