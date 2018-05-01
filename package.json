@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {
@@ -29,6 +29,7 @@
     "activationEvents": [
         "onLanguage:python",
         "onCommand:importMagic.resolveImport",
+        "onCommand:importMagic.removeUnusedImports",
         "onCommand:importMagic.insertImport",
         "onCommand:importMagic.findSymbols"
     ],
@@ -48,6 +49,11 @@
                 "category": "Python Refactor"
             },
             {
+                "command": "importMagic.removeUnusedImports",
+                "title": "Remove Unused Imports",
+                "category": "Python Refactor"
+            },
+            {
                 "command": "importMagic.insertImport",
                 "title": "Insert Import",
                 "category": "Python Refactor"
@@ -62,6 +68,11 @@
             "editor/context": [
                 {
                     "command": "importMagic.resolveImport",
+                    "group": "Refactor",
+                    "when": "editorLangId == python"
+                },
+                {
+                    "command": "importMagic.removeUnusedImports",
                     "group": "Refactor",
                     "when": "editorLangId == python"
                 }

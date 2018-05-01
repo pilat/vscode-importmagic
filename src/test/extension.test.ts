@@ -49,8 +49,6 @@ suite('ImportMagic', () => {
 
     teardown(async () => {
         await closeActiveWindows();
-    //     ioc.dispose();
-        im.dispose();
     });
 
     test('Import candidates from project folder', async () => {

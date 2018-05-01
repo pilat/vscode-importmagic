@@ -9,6 +9,7 @@ export class ImportMagic implements Disposable {
         const p = this.importMagicProvider;
 
         this.disposables.push(commands.registerCommand('importMagic.resolveImport', p.resolveImport.bind(p)));
+        this.disposables.push(commands.registerCommand('importMagic.removeUnusedImports', p.removeUnusedImports.bind(p)));
         this.disposables.push(commands.registerCommand('importMagic.insertImport', p.insertImport.bind(p)));
         this.disposables.push(workspace.onDidSaveTextDocument(p.onSave.bind(p)));
     }

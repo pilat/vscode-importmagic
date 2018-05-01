@@ -13,6 +13,7 @@ export enum MethodType {
     BuildIndex = 'build_index',
     Suggestions = 'import_suggestions',
     Import = 'insert_import',
+    RemoveUnusedImports = 'remove_unused_imports',
     Symbols = 'get_symbols'
 }
 
@@ -47,6 +48,12 @@ export interface IResultSymbols extends ICommandResult {
 }
 
 export interface IResultImport extends ICommandResult {
+    fromLine: number;
+    endLine: number;
+    text: string;
+}
+
+export interface IResultRemoveUnusedImports extends ICommandResult {
     fromLine: number;
     endLine: number;
     text: string;
@@ -87,6 +94,10 @@ export interface ICommandImport<T extends ICommandResult> extends ICommand<T> {
     variable?: string;
 }
 
+export interface ICommandRemoveUnusedImports<T extends ICommandResult> extends ICommand<T> {
+    sourceFile: string;
+}
+
 export class ImportMagicProxy {
     private pythonSettings: PythonSettings;
     private workspacePath: string;
@@ -98,6 +109,7 @@ export class ImportMagicProxy {
     private commands = new Map<number, ICommand<ICommandResult>>();
     private commandId: number = 0;
     private restartAttempts: number = 0;
+    private progressPromise: Promise<object> | null = null;
 
     constructor(private extensionRootDir: string, workspacePath: string) {
         this.workspacePath = workspacePath;
@@ -120,9 +132,18 @@ export class ImportMagicProxy {
         return this.sendRequest(cmd);
     }
 
-    @debounce(10000)
-    public async rebuildIndex() {
-        await this.buildIndex();
+    @debounce(30000)
+    public async buildIndex() {
+        const isTest = isTestExecution();
+
+        const cmd: ICommandBuild<IResultBuild> = {
+            method: MethodType.BuildIndex,
+            workspacePath: this.workspacePath,
+            extraPaths: this.getExtraPaths(),
+            skipTestFolders: !isTest
+        };
+
+        await this.sendRequest(cmd);
     }
 
     private onChangeSettings() {
@@ -172,19 +193,6 @@ export class ImportMagicProxy {
         this.languageServerStarted.resolve();
     }
 
-    private async buildIndex() {
-        const isTest = isTestExecution();
-
-        const cmd: ICommandBuild<IResultBuild> = {
-            method: MethodType.BuildIndex,
-            workspacePath: this.workspacePath,
-            extraPaths: this.getExtraPaths(),
-            skipTestFolders: !isTest
-        };
-
-        await this.sendRequest(cmd);
-    }
-
     private killProcess() {
         try {
             if (this.proc) {
@@ -227,6 +235,7 @@ export class ImportMagicProxy {
 
             this.proc.stdin.write(`${JSON.stringify(extendedPayload)}\n`);
             this.commands.set(this.commandId, executionCmd);
+            this.updateProgress();
         }catch (ex) {
             logger.error('ImportMagicProxy', `Error "${ex.message}"`);
             if (this.restartAttempts < 10) {
@@ -246,6 +255,7 @@ export class ImportMagicProxy {
             }
         });
         this.commands.clear();
+        this.updateProgress();
     }
 
     private onData(dataStr: string) {
@@ -263,6 +273,7 @@ export class ImportMagicProxy {
                 return;
             }
             this.commands.delete(responseId);
+            this.updateProgress();
 
             if (response.error) {
                 logger.error('ImportMagicProxy', `Error from process: ${response.message}`);
@@ -295,6 +306,8 @@ export class ImportMagicProxy {
                 return this.onSuggestions;
             case MethodType.Import:
                 return this.onImport;
+            case MethodType.RemoveUnusedImports:
+                return this.onRemoveUnusedImports;
             case MethodType.Symbols:
                 return this.onSymbols;
             default:
@@ -310,6 +323,29 @@ export class ImportMagicProxy {
             traceback: ImportMagicProxy.getProperty<string>(response, 'traceback'),
             type: ImportMagicProxy.getProperty<string>(response, 'type')
         };
+    }
+
+    private updateProgress() {
+        if (this.progressPromise !== null) {
+            return;
+        }
+
+        const title = 'ImportMagic: progress';
+        vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: title}, p => {
+            this.progressPromise = new Promise((resolve, reject) => {
+                const handle = setInterval(() => {
+                    const value = this.commands.size;
+                    // const plural = value > 1 ? 's' : '';
+                    // p.report({message: `${title} (${value} task${plural})` });
+                    if (value === 0) {
+                        clearInterval(handle);
+                        resolve();
+                        this.progressPromise = null;
+                    }
+                }, 500);
+            });
+            return this.progressPromise;
+        });
     }
 
     private onBuild(command: ICommand<ICommandResult>, response: object): IResultBuild {
@@ -339,6 +375,15 @@ export class ImportMagicProxy {
     }
 
     private onImport(command: ICommand<ICommandResult>, response: object): IResultImport {
+        return {
+            requestId: command.commandId,
+            fromLine: ImportMagicProxy.getProperty<number>(response, 'fromLine'),
+            endLine: ImportMagicProxy.getProperty<number>(response, 'endLine'),
+            text: ImportMagicProxy.getProperty<string>(response, 'text') || ''
+        };
+    }
+
+    private onRemoveUnusedImports(command: ICommand<ICommandResult>, response: object): IResultRemoveUnusedImports {
         return {
             requestId: command.commandId,
             fromLine: ImportMagicProxy.getProperty<number>(response, 'fromLine'),

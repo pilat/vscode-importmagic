@@ -127,7 +127,6 @@ class ImportMagicDaemon(object):
         else:
             imports.add_import_from(module, variable)
         start, end, text = imports.get_update()
-
         return dict(fromLine=start, endLine=end, text=text)
 
     def method_get_symbols(self, **kwargs):
@@ -168,6 +167,28 @@ class ImportMagicDaemon(object):
         
         return dict(items=sorted(results.values(), key=lambda x: x['_score'])[:ITEMS_LIMIT])
 
+    def method_remove_unused_imports(self, **kwargs):
+        source_file = kwargs.get('sourceFile')
+
+        if not source_file:
+            raise ValueError('Empty sourceFile')   
+
+        if not self._index:
+            raise Exception('First run build_index() method')
+
+        with open(source_file, 'r') as fd:
+            python_source = fd.read()
+
+        imports = importmagic.Imports(self._index, python_source)
+        imports.set_style(multiline='backslash', max_columns=79)  # TODO: Get style from VS Code
+
+        scope = importmagic.Scope.from_source(python_source)
+        importmagic.importer.update_imports(python_source, self._index,
+            *scope.find_unresolved_and_unreferenced_symbols())
+
+        start, end, text = imports.get_update()
+        return dict(fromLine=start, endLine=end, text=text)
+    
     def _process_request(self, request):
         method_name = request.get('method')
         

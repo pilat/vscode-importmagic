@@ -11,6 +11,6 @@ export function debounce(wait?: number) {
     return function (_target: any, _propertyName: string, descriptor: TypedPropertyDescriptor<VoidAction> | TypedPropertyDescriptor<AsyncVoidAction>) {
         const originalMethod = descriptor.value!;
         // tslint:disable-next-line:no-invalid-this no-any
-        (descriptor as any).value = _.debounce(function () { return originalMethod.apply(this, arguments); }, wait);
+        (descriptor as any).value = _.debounce(function () { return originalMethod.apply(this, arguments); }, wait, {leading: true});
     };
 }
