@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {
@@ -29,39 +29,26 @@
     "activationEvents": [
         "onLanguage:python",
         "onCommand:importMagic.resolveImport",
-        "onCommand:importMagic.removeUnusedImports",
         "onCommand:importMagic.insertImport",
-        "onCommand:importMagic.findSymbols"
+        "onCommand:importMagic.rebuildIndex"
     ],
     "main": "./out/extension",
     "contributes": {
-        "keybindings": [
-            {
-                "command": "importMagic.findSymbols",
-                "key": "ctrl+shift+space",
-                "when": "editorLangId == python"
-            }
-        ],
         "commands": [
             {
                 "command": "importMagic.resolveImport",
-                "title": "Resolve Imports",
-                "category": "Python Refactor"
-            },
-            {
-                "command": "importMagic.removeUnusedImports",
-                "title": "Remove Unused Imports",
-                "category": "Python Refactor"
+                "title": "Resolve Import",
+                "category": "ImportMagic"
             },
             {
                 "command": "importMagic.insertImport",
                 "title": "Insert Import",
-                "category": "Python Refactor"
+                "category": "ImportMagic"
             },
             {
-                "command": "importMagic.findSymbols",
-                "title": "Find Symbols",
-                "category": "Python Refactor"
+                "command": "importMagic.rebuildIndex",
+                "title": "Rebuild Index",
+                "category": "ImportMagic"
             }
         ],
         "menus": {
@@ -70,13 +57,46 @@
                     "command": "importMagic.resolveImport",
                     "group": "Refactor",
                     "when": "editorLangId == python"
-                },
-                {
-                    "command": "importMagic.removeUnusedImports",
-                    "group": "Refactor",
-                    "when": "editorLangId == python"
                 }
             ]
+        },
+        "configuration": {
+            "type": "object",
+            "title": "ImportMagic",
+            "properties": {
+                "importMagic.multiline": {
+                    "type": "string",
+                    "enum": [
+                        "backslash",
+                        "parentheses"
+                    ],
+                    "default": "backslash",
+                    "description": "How importMagic should wrap multiline imports",
+                    "scope": "resource"
+                },
+                "importMagic.maxColumns": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Maximal columns in your project",
+                    "scope": "resource"
+                },
+                "importMagic.indentWithTabs": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "ImportMagic may using tabs when makes multiline indents",
+                    "scope": "resource"
+                },
+                "importMagic.indexRebuildPolicy": {
+                    "type": "string",
+                    "enum": [
+                        "onSave",
+                        "manually"
+                    ],
+                    "default": "onSave",
+                    "description": "ImportMagic can rebuild the index every time when some file changes. Or it can do it manually from the Command Palette.",
+                    "scope": "resource"
+                }
+            }
         }
     },
     "scripts": {

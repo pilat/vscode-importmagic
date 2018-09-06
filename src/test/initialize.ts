@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { PythonSettings } from '../common/configSettings';
+import { ExtensionSettings } from '../common/configSettings';
 import { activated } from '../extension';
 import { clearPythonPathInWorkspaceFolder, resetGlobalPythonPathSetting, setPythonPathInWorkspaceRoot } from './common';
 
@@ -30,14 +30,14 @@ export async function initialize(): Promise<any> {
     await vscode.workspace.openTextDocument(dummyPythonFile);
     await activated;
     // Dispose any cached python settings (used only in test env).
-    PythonSettings.dispose();
+    ExtensionSettings.dispose();
 }
 // tslint:disable-next-line:no-any
 export async function initializeTest(): Promise<any> {
     await initializePython();
     await closeActiveWindows();
     // Dispose any cached python settings (used only in test env).
-    PythonSettings.dispose();
+    ExtensionSettings.dispose();
 }
 
 // export async function wait(timeoutMilliseconds: number) {

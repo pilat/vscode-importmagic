@@ -1,4 +1,4 @@
-import { PythonSettings } from './../common/configSettings';
+import { ExtensionSettings } from './../common/configSettings';
 import { ProcessService } from './../common/proc';
 import { ICommandResult } from './importMagicProxy';
 import * as logger from '../common/logger';
@@ -9,8 +9,9 @@ import { createDeferred, Deferred } from '../common/helpers';
 import { debounce } from '../common/decorators';
 import { isTestExecution } from '../common/utils';
 
-export enum MethodType {
-    BuildIndex = 'build_index',
+export enum ActionType {
+    Configure = 'configure',
+    Renew = 'renew',  // Renew index
     Suggestions = 'import_suggestions',
     Import = 'insert_import',
     RemoveUnusedImports = 'remove_unused_imports',
@@ -21,7 +22,11 @@ export interface ICommandResult {
     requestId?: number;
 }
 
-interface IResultBuild extends ICommandResult {
+interface IResultConfigure extends ICommandResult {
+    success: boolean;
+}
+
+interface IResultRenew extends ICommandResult {
     success: boolean;
 }
 
@@ -67,17 +72,21 @@ interface IResultError extends ICommandResult {
 }
 
 export interface ICommand<T extends ICommandResult> {
-    method: MethodType;
+    action: ActionType;
     deferred?: Deferred<T>;
     commandId?: number;
     text?: string;
 }
 
-interface ICommandBuild<T extends ICommandResult> extends ICommand<T> {
+interface ICommandConfigure<T extends ICommandResult> extends ICommand<T> {
     workspacePath: string;
     extraPaths: string[];
     skipTestFolders: boolean;
+    style: object;
+    tempStoragePath: string;
 }
+
+interface ICommandRenew<T extends ICommandResult> extends ICommand<T> { }
 
 export interface ICommandSuggestions<T extends ICommandResult> extends ICommand<T> {
     sourceFile: string;
@@ -99,8 +108,8 @@ export interface ICommandRemoveUnusedImports<T extends ICommandResult> extends I
 }
 
 export class ImportMagicProxy {
-    private pythonSettings: PythonSettings;
-    private workspacePath: string;
+    public settings: ExtensionSettings;
+    // private workspacePath: string;
 
     private proc: ChildProcess | null;
     private previousData = '';
@@ -111,10 +120,9 @@ export class ImportMagicProxy {
     private restartAttempts: number = 0;
     private progressPromise: Promise<object> | null = null;
 
-    constructor(private extensionRootDir: string, workspacePath: string) {
-        this.workspacePath = workspacePath;
-        this.pythonSettings = PythonSettings.getInstance(vscode.Uri.file(workspacePath));
-        this.pythonSettings.on('change', () => this.onChangeSettings());
+    constructor(private extensionRootDir: string, private workspacePath: string, private storagePath: string) {
+        this.settings = ExtensionSettings.getInstance(vscode.Uri.file(this.workspacePath));
+        this.settings.on('change', () => this.onChangeSettings());
 
         this.restartServer();
     }
@@ -132,23 +140,34 @@ export class ImportMagicProxy {
         return this.sendRequest(cmd);
     }
 
-    @debounce(30000)
-    public async buildIndex() {
-        const isTest = isTestExecution();
-
-        const cmd: ICommandBuild<IResultBuild> = {
-            method: MethodType.BuildIndex,
-            workspacePath: this.workspacePath,
-            extraPaths: this.getExtraPaths(),
-            skipTestFolders: !isTest
+    @debounce(5000)
+    public async renewIndex() {
+        const cmd: ICommandRenew<IResultRenew> = {
+            action: ActionType.Renew
         };
 
         await this.sendRequest(cmd);
     }
 
+    public async configure() {
+        const isTest = isTestExecution();
+        const cmd: ICommandConfigure<IResultConfigure> = {
+            action: ActionType.Configure,
+            workspacePath: this.workspacePath,
+            extraPaths: this.getExtraPaths(),
+            skipTestFolders: !isTest,
+            style: {
+                multiline: this.settings.multiline,
+                maxColumns: this.settings.maxColumns,
+                indentWithTabs: this.settings.indentWithTabs
+            },
+            tempStoragePath: this.storagePath
+        };
+        await this.sendRequest(cmd);
+    }
+
     private onChangeSettings() {
-        this.restartAttempts = 0;
-        this.restartServer();
+        this.configure();
     }
 
     private restartServer() {
@@ -163,7 +182,7 @@ export class ImportMagicProxy {
         const cwd: string = path.join(this.extensionRootDir, 'pythonFiles');
         const pythonProcess = new ProcessService();
 
-        const pythonPath = this.pythonSettings.pythonPath;
+        const pythonPath = this.settings.pythonPath;
         const args = ['importMagic.py'];
         const result = pythonProcess.execObservable(pythonPath, args, { cwd });
         this.proc = result.proc;
@@ -189,7 +208,7 @@ export class ImportMagicProxy {
             }
         });
 
-        await this.buildIndex();
+        await this.configure();
         this.languageServerStarted.resolve();
     }
 
@@ -205,7 +224,7 @@ export class ImportMagicProxy {
 
     private getExtraPaths() {
         // Add support for paths relative to workspace.
-        return this.pythonSettings.extraPaths.map(extraPath => {
+        return this.settings.extraPaths.map(extraPath => {
             if (path.isAbsolute(extraPath)) {
                 return extraPath;
             }
@@ -280,7 +299,7 @@ export class ImportMagicProxy {
             }
 
             const isError: boolean = response.error ? true : false;
-            const handler = isError ? this.onError : this.getCommandHandler(cmd.method);
+            const handler = isError ? this.onError : this.getCommandHandler(cmd.action);
             if (!handler) {
                 return;
             }
@@ -298,17 +317,20 @@ export class ImportMagicProxy {
         } catch { }
     }
 
-    private getCommandHandler(command: MethodType): undefined | ((command: ICommand<ICommandResult>, response: object) => ICommandResult) {
+    private getCommandHandler(command: ActionType): undefined | ((command: ICommand<ICommandResult>,
+        response: object) => ICommandResult) {
         switch (command) {
-            case MethodType.BuildIndex:
-                return this.onBuild;
-            case MethodType.Suggestions:
+            case ActionType.Configure:
+                return this.onConfigure;
+            case ActionType.Renew:
+                return this.onRenew;
+            case ActionType.Suggestions:
                 return this.onSuggestions;
-            case MethodType.Import:
+            case ActionType.Import:
                 return this.onImport;
-            case MethodType.RemoveUnusedImports:
+            case ActionType.RemoveUnusedImports:
                 return this.onRemoveUnusedImports;
-            case MethodType.Symbols:
+            case ActionType.Symbols:
                 return this.onSymbols;
             default:
                 return;
@@ -348,7 +370,14 @@ export class ImportMagicProxy {
         });
     }
 
-    private onBuild(command: ICommand<ICommandResult>, response: object): IResultBuild {
+    private onConfigure(command: ICommand<ICommandResult>, response: object): IResultConfigure {
+        return {
+            requestId: command.commandId,
+            success: ImportMagicProxy.getProperty<boolean>(response, 'success')
+        };
+    }
+
+    private onRenew(command: ICommand<ICommandResult>, response: object): IResultRenew {
         return {
             requestId: command.commandId,
             success: ImportMagicProxy.getProperty<boolean>(response, 'success')

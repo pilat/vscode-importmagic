@@ -5,7 +5,7 @@ export class ImportMagicProxyFactory implements Disposable {
     private disposables: Disposable[];
     private proxyHandlers: Map<string, ImportMagicProxy>;
 
-    constructor(private extensionRootPath: string) {
+    constructor(private extensionRootPath: string, private storagePath: string) {
         this.disposables = [];
         this.proxyHandlers = new Map<string, ImportMagicProxy>();
     }
@@ -29,7 +29,7 @@ export class ImportMagicProxyFactory implements Disposable {
         let importMagic = this.proxyHandlers.get(workspacePath);
 
         if (!importMagic) {
-            importMagic = new ImportMagicProxy(this.extensionRootPath, workspacePath);
+            importMagic = new ImportMagicProxy(this.extensionRootPath, workspacePath, this.storagePath);
             this.disposables.push(importMagic);
             this.proxyHandlers.set(workspacePath, importMagic);
         }

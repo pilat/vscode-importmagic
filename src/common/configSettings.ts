@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { ConfigurationTarget, Uri } from 'vscode';
 
 import { SystemVariables } from './systemVariables';
-import { IPythonSettings } from './types';
+import { IExtensionSettings } from './types';
 import { isTestExecution } from './utils';
 
 import * as child_process from 'child_process';
@@ -13,10 +13,14 @@ import * as untildify from 'untildify';
 
 export const IS_WINDOWS = /^win/.test(process.platform);
 
-export class PythonSettings extends EventEmitter implements IPythonSettings {
-    private static pythonSettings: Map<string, PythonSettings> = new Map<string, PythonSettings>();
+export class ExtensionSettings extends EventEmitter implements IExtensionSettings {  // Rename it to "Settings"
+    private static instances: Map<string, ExtensionSettings> = new Map<string, ExtensionSettings>();
 
     public extraPaths: string[] = [];
+    public multiline: string = 'backslash';
+    public maxColumns: number = 0;
+    public indentWithTabs: boolean = false;
+    public indexRebuildPolicy: string = 'onSave';
 
     private workspaceRoot: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
@@ -27,21 +31,21 @@ export class PythonSettings extends EventEmitter implements IPythonSettings {
         this.workspaceRoot = workspaceFolder ? workspaceFolder : vscode.Uri.file(__dirname);
         this.disposables.push(vscode.workspace.onDidChangeConfiguration(() => {
             this.initializeSettings();
-            setTimeout(() => this.emit('change'), 1);
+            this.emit('change');
         }));
 
         this.initializeSettings();
     }
 
-    public static getInstance(resource?: Uri): PythonSettings {
-        const workspaceFolderUri = PythonSettings.getSettingsUri(resource);
+    public static getInstance(resource?: Uri): ExtensionSettings {
+        const workspaceFolderUri = ExtensionSettings.getSettingsUri(resource);
         const workspaceFolderKey = workspaceFolderUri ? workspaceFolderUri.fsPath : '';
 
-        if (!PythonSettings.pythonSettings.has(workspaceFolderKey)) {
-            const settings = new PythonSettings(workspaceFolderUri);
-            PythonSettings.pythonSettings.set(workspaceFolderKey, settings);
+        if (!ExtensionSettings.instances.has(workspaceFolderKey)) {
+            const settings = new ExtensionSettings(workspaceFolderUri);
+            ExtensionSettings.instances.set(workspaceFolderKey, settings);
         }
-        return PythonSettings.pythonSettings.get(workspaceFolderKey)!;
+        return ExtensionSettings.instances.get(workspaceFolderKey)!;
     }
 
     public static getSettingsUri(resource?: Uri): Uri | undefined {
@@ -59,8 +63,8 @@ export class PythonSettings extends EventEmitter implements IPythonSettings {
         if (!isTestExecution()) {
             throw new Error('Dispose can only be called from unit tests');
         }
-        PythonSettings.pythonSettings.forEach(item => item.dispose());
-        PythonSettings.pythonSettings.clear();
+        ExtensionSettings.instances.forEach(item => item.dispose());
+        ExtensionSettings.instances.clear();
     }
 
     public dispose() {
@@ -72,12 +76,32 @@ export class PythonSettings extends EventEmitter implements IPythonSettings {
         const workspaceRoot = this.workspaceRoot.fsPath;
         const systemVariables: SystemVariables = new SystemVariables(this.workspaceRoot ? this.workspaceRoot.fsPath : undefined);
         const pythonSettings = vscode.workspace.getConfiguration('python', this.workspaceRoot);
+        const pluginSettings = vscode.workspace.getConfiguration('importMagic', this.workspaceRoot);
+        const editorSettings = vscode.workspace.getConfiguration('editor', this.workspaceRoot);
 
         this.pythonPath = systemVariables.resolveAny(pythonSettings.get<string>('pythonPath'))!;
         this.pythonPath = getAbsolutePath(this.pythonPath, workspaceRoot);
 
         this.extraPaths = systemVariables.resolveAny(pythonSettings.get<string[]>('autoComplete.extraPaths'))!;
+
+        this.multiline = pluginSettings.get<string>('multiline', 'backslash');
+        this.maxColumns = pluginSettings.get<number>('maxColumns', 0);
+        this.indentWithTabs = pluginSettings.get<boolean>('indentWithTabs', false);
+        this.indexRebuildPolicy = pluginSettings.get<string>('indexRebuildPolicy', 'onSave');
+
+        if (!this.maxColumns) {
+            const rulers = editorSettings.get<number[]>('rulers', []);
+            this.maxColumns = 79;
+            if (rulers.length > 0 && rulers[0] > 39) {
+                this.maxColumns = rulers[0];
+            }
+        }
+
     }
+
+    // public get getStyle(): object {
+    //     ret
+    // }
 
     public get pythonPath(): string {
         return this._pythonPath;

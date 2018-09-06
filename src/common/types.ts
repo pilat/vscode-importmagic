@@ -40,9 +40,14 @@ export class StdErrError extends Error {
     }
 }
 
-export interface IPythonSettings {
+export interface IExtensionSettings {
     pythonPath: string;
     extraPaths: string[];
+
+    multiline: string;
+    maxColumns: number;
+    indentWithTabs: boolean;
+    indexRebuildPolicy: string;
 }
 
 /**

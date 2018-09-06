@@ -1,29 +1,17 @@
 import * as vscode from 'vscode';
 import { CompletionContext, commands, Disposable } from 'vscode';
 import { ImportMagicProxyFactory } from '../languageServices/importMagicProxyFactory';
-import { IResultSymbols, MethodType, ICommandSymbols, ISuggestionSymbol } from './importMagicProxy';
+import { IResultSymbols, ActionType, ICommandSymbols, ISuggestionSymbol } from './importMagicProxy';
 import { isTestExecution } from '../common/utils';
 
 export class ImportMagicCompletionItemProvider implements vscode.CompletionItemProvider {
-    private disposables: Disposable[] = [];
-    private enable: boolean = false;
+    constructor(private importMagicFactory: ImportMagicProxyFactory) { }
 
-    constructor(private importMagicFactory: ImportMagicProxyFactory) {
-        this.disposables.push(commands.registerCommand('importMagic.findSymbols', this.toggleFindSymbols.bind(this)));
-    }
-
-    public dispose() {
-        this.disposables.forEach(disposable => disposable.dispose());
-    }
-
-    public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position,
-        token: vscode.CancellationToken, context: CompletionContext): Promise<vscode.CompletionItem[]> {
-        if (!this.enable) {
-            return [];
-        }
+    public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken,
+        context: CompletionContext): Promise<vscode.CompletionItem[]> {
 
         const result = await this.getCompletionResult(document, position, token);
-        this.enable = false;
+        //console.warn(`Result: ${result.length > 0 ? result[0].label : 'nothing'}`);
 
         if (result === undefined) {
             return [];
@@ -32,24 +20,18 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         return result;
     }
 
-    private toggleFindSymbols() {
-        this.enable = true;
-        if (!isTestExecution()) {
-            commands.executeCommand('editor.action.triggerSuggest');
-        }
-    }
-
     private async getCompletionResult(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken)
         : Promise<vscode.CompletionItem[] | undefined> {
-            const range = document.getWordRangeAtPosition(position);
-            const text = document.getText(range);
-            if (!text) {
-                return undefined;
-            }
+        const range = document.getWordRangeAtPosition(position);
+        const text = document.getText(range);
+        if (!text) {
+            return undefined;
+        }
 
+        //console.warn('Search %s (pos: %s)', text, position);
         const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
         const cmd: ICommandSymbols<IResultSymbols> = {
-            method: MethodType.Symbols,
+            action: ActionType.Symbols,
             text
         };
         const result = await importMagic.sendCommand(cmd);
@@ -82,7 +64,9 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         };
 
         if (item.variable) {
-            completionItem.detail = `from ${item.module}`;
+            completionItem.detail = `from ${item.module} import ${item.variable}`;
+        } else {
+            completionItem.detail = `import ${item.module}`;
         }
 
         return completionItem;

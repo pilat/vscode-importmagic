@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { ConfigurationTarget, Uri, workspace } from 'vscode';
-import { PythonSettings } from '../common/configSettings';
+import { ExtensionSettings } from '../common/configSettings';
 import { IS_MULTI_ROOT_TEST } from './initialize';
 
 const fileInNonRootWorkspace = path.join(__dirname, '..', '..', 'src', 'test', 'pythonFiles', 'dummy.py');
@@ -23,12 +23,12 @@ export async function updateSetting(setting: PythonSettingKeys, value: {} | unde
     if (currentValue !== undefined && ((configTarget === ConfigurationTarget.Global && currentValue.globalValue === value) ||
         (configTarget === ConfigurationTarget.Workspace && currentValue.workspaceValue === value) ||
         (configTarget === ConfigurationTarget.WorkspaceFolder && currentValue.workspaceFolderValue === value))) {
-        PythonSettings.dispose();
+        ExtensionSettings.dispose();
         return;
     }
     // tslint:disable-next-line:await-promise
     await settings.update(setting, value, configTarget);
-    PythonSettings.dispose();
+    ExtensionSettings.dispose();
 }
 
 function getWorkspaceRoot() {
@@ -81,7 +81,7 @@ async function setPythonPathInWorkspace(resource: string | Uri | undefined, conf
     const prop: 'workspaceFolderValue' | 'workspaceValue' = config === ConfigurationTarget.Workspace ? 'workspaceValue' : 'workspaceFolderValue';
     if (value && value[prop] !== pythonPath) {
         await settings.update('pythonPath', pythonPath, config);
-        PythonSettings.dispose();
+        ExtensionSettings.dispose();
     }
 }
 async function restoreGlobalPythonPathSetting(): Promise<void> {
@@ -93,7 +93,7 @@ async function restoreGlobalPythonPathSetting(): Promise<void> {
     if (globalPythonPathSetting !== currentGlobalPythonPathSetting) {
         await pythonConfig.update('pythonPath', undefined, true);
     }
-    PythonSettings.dispose();
+    ExtensionSettings.dispose();
 }
 
 export async function deleteDirectory(dir: string) {

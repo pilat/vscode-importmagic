@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
 import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace} from 'vscode';
-import { IResultSuggestions, MethodType, ICommandSuggestions, ICommandImport, ICommandRemoveUnusedImports, IResultImport, IResultRemoveUnusedImports, ISuggestionItem } from './importMagicProxy';
+import { IResultSuggestions, ActionType, ICommandSuggestions, ICommandImport, ICommandRemoveUnusedImports, IResultImport, IResultRemoveUnusedImports, ISuggestionItem } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
@@ -19,7 +19,7 @@ export class ImportMagicProvider {
         }
 
         const cmd: ICommandSuggestions<IResultSuggestions> = {
-            method: MethodType.Suggestions,
+            action: ActionType.Suggestions,
             sourceFile,
             unresolvedName
         };
@@ -41,7 +41,9 @@ export class ImportMagicProvider {
     public async onSave(document: TextDocument) {
         if (document.languageId === 'python') {
             const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
-            await importMagic.buildIndex();
+            if (importMagic.settings.indexRebuildPolicy === 'onSave') {
+                await importMagic.renewIndex();
+            }
         }
     }
 
@@ -113,7 +115,7 @@ export class ImportMagicProvider {
 
         try {
             const cmd: ICommandRemoveUnusedImports<IResultRemoveUnusedImports> = {
-                method: MethodType.RemoveUnusedImports,
+                action: ActionType.RemoveUnusedImports,
                 sourceFile: filePath
             };
 
@@ -146,7 +148,7 @@ export class ImportMagicProvider {
 
         try {
             const cmd: ICommandImport<IResultImport> = {
-                method: MethodType.Import,
+                action: ActionType.Import,
                 sourceFile: filePath,
                 module,
                 variable
@@ -161,6 +163,15 @@ export class ImportMagicProvider {
                 fs.unlinkSync(filePath);
             }
         }
+    }
+
+    public async rebuildIndex() {
+        const activeEditor = window.activeTextEditor;
+        if (!activeEditor) {
+            return undefined;
+        }
+        const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
+        await importMagic.renewIndex();
     }
 
     private suggestionToQuickPickItem(suggestion: ISuggestionItem): ImportPathQuickPickItem {

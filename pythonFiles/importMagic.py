@@ -23,35 +23,80 @@ class ImportMagicDaemon(object):
     def __init__(self):
         self._input = io.open(sys.stdin.fileno(), encoding='utf-8')
         self._index = None
+        self._style = dict(multiline='backslash', 
+            max_columns=79, indent_with_tabs=False)
 
-    def method_build_index(self, **kwargs):
+        self._paths = None
+        self._skip_test_folders = False
+        self._index_file = None
+
+    def configure(self, **kwargs):
         workspace_path = kwargs.get('workspacePath')
         extra_paths = kwargs.get('extraPaths', [])
         skip_test_folders = kwargs.get('skipTestFolders')
+        temp_storage_path = kwargs.get('tempStoragePath')
+
+        # Create folder if it is not exists
+        if not os.path.exists(temp_storage_path):
+            os.makedirs(temp_storage_path)
+        self._index_file = os.path.join(temp_storage_path, 'index.json')
+
+        style_settings = kwargs.get('style', {})
+        self._style = dict(
+            multiline=style_settings.get('multiline', 'backslash'), 
+            max_columns=style_settings.get('maxColumns', 79),
+            indent_with_tabs=style_settings.get('indentWithTabs', False)
+        )
 
         if not workspace_path:
             raise ValueError('Empty workspacePath')
 
-        paths = list(set(extra_paths + [workspace_path] + sys.path))
+        is_need_restart = False
+        is_first_time = self._paths is None
 
-        if skip_test_folders:
+        old_paths = self._paths
+        self._paths = list(set(extra_paths + [workspace_path] + sys.path))
+        if self._paths != old_paths:
+            is_need_restart = True
+
+        old_skip_test_folders = self._skip_test_folders
+        self._skip_test_folders = skip_test_folders
+        if self._skip_test_folders != old_skip_test_folders:
+            is_need_restart = True
+
+        if is_first_time:
+            self.renew(allow_cached_index=True)
+        elif is_need_restart:
+            return self.renew()
+
+        return dict(success=True)
+        
+    def renew(self, allow_cached_index=False, **kwargs):
+        if self._skip_test_folders:
             blacklist_re = importmagic.index.DEFAULT_BLACKLIST_RE
         else:
             blacklist_re = re.compile(r'^$')
 
-        self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
-        self._index.build_index(paths)
+        # Try to restore cached index
+        if allow_cached_index and os.path.exists(self._index_file):
+            with open(self._index_file) as fd:
+                self._index = importmagic.SymbolIndex.deserialize(fd)
+        else:
+            self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
+            self._index.build_index(self._paths)
+            with open(self._index_file, 'w') as fd:
+                fd.write(self._index.serialize())
 
         return dict(success=True)
 
-    def method_get_unresolved(self, **kwargs):
+    def get_unresolved(self, **kwargs):
         source_file = kwargs.get('sourceFile')
         
         if not source_file:
-            raise ValueError('Empty sourceFile')   
+            raise ValueError('Empty sourceFile')
 
         if not self._index:
-            raise Exception('First run build_index() method')
+            raise Exception('Run configure() at first')
 
         with open(source_file, 'r') as fd:
             python_source = fd.read()
@@ -60,9 +105,10 @@ class ImportMagicDaemon(object):
         unresolved, unreferenced = \
                             scope.find_unresolved_and_unreferenced_symbols()
 
-        return dict(unresolved=list(unresolved), unreferenced=list(unreferenced))
+        return dict(unresolved=list(unresolved), 
+            unreferenced=list(unreferenced))
 
-    def method_import_suggestions(self, **kwargs):
+    def import_suggestions(self, **kwargs):
         source_file = kwargs.get('sourceFile')
         unresolved_name = kwargs.get('unresolvedName')
         
@@ -70,10 +116,10 @@ class ImportMagicDaemon(object):
             raise ValueError('Empty sourceFile')
 
         if not unresolved_name:
-            raise ValueError('Empty unresolvedName')    
+            raise ValueError('Empty unresolvedName')
 
         if not self._index:
-            raise Exception('First run build_index() method')
+            raise Exception('Run configure() at first')
 
         with open(source_file, 'r') as fd:
             python_source = fd.read()
@@ -93,7 +139,8 @@ class ImportMagicDaemon(object):
             raise Exception('Import this expression is not necessary')
 
         candidates = []
-        for score, module, variable in self._index.symbol_scores(unresolved_name):
+        for score, module, variable in \
+            self._index.symbol_scores(unresolved_name):
             candidates.append(dict(score=score, module=module, 
                                     variable=variable))
             if len(candidates) >= ITEMS_LIMIT:
@@ -101,7 +148,7 @@ class ImportMagicDaemon(object):
 
         return dict(candidates=candidates)
 
-    def method_insert_import(self, **kwargs):
+    def insert_import(self, **kwargs):
         source_file = kwargs.get('sourceFile')
         
         module = kwargs.get('module')
@@ -114,13 +161,13 @@ class ImportMagicDaemon(object):
             raise ValueError('Empty module')
 
         if not self._index:
-            raise Exception('First run inibuild_indext() method')
+            raise Exception('Run configure() at first')
 
         with open(source_file, 'r') as fd:
             python_source = fd.read()
         
         imports = importmagic.Imports(self._index, python_source)
-        imports.set_style(multiline='backslash', max_columns=79)  # TODO: Get style from VS Code
+        imports.set_style(**self._style)
 
         if variable is None:
             imports.add_import(module)
@@ -129,16 +176,16 @@ class ImportMagicDaemon(object):
         start, end, text = imports.get_update()
         return dict(fromLine=start, endLine=end, text=text)
 
-    def method_get_symbols(self, **kwargs):
+    def get_symbols(self, **kwargs):
         find = kwargs.get('text', '').replace('_', '').lower()
         
         if not self._index:
-            raise Exception('First run build_index() method')
+            raise Exception('Run configure() at first')
 
         results = {}
 
         def scan_tree(scope):
-            for key, subscope in scope._tree.items():        
+            for key, subscope in scope._tree.items():
                 if type(subscope) is not float:
                     get_result(key, scope, subscope.score)
                     scan_tree(subscope)
@@ -165,22 +212,23 @@ class ImportMagicDaemon(object):
 
         scan_tree(self._index)
         
-        return dict(items=sorted(results.values(), key=lambda x: x['_score'])[:ITEMS_LIMIT])
+        return dict(items=sorted(results.values(), 
+            key=lambda x: x['_score'])[:ITEMS_LIMIT])
 
-    def method_remove_unused_imports(self, **kwargs):
+    def remove_unused_imports(self, **kwargs):
         source_file = kwargs.get('sourceFile')
 
         if not source_file:
             raise ValueError('Empty sourceFile')   
 
         if not self._index:
-            raise Exception('First run build_index() method')
+            raise Exception('Run configure() at first')
 
         with open(source_file, 'r') as fd:
             python_source = fd.read()
 
         imports = importmagic.Imports(self._index, python_source)
-        imports.set_style(multiline='backslash', max_columns=79)  # TODO: Get style from VS Code
+        imports.set_style(**self._style)
 
         scope = importmagic.Scope.from_source(python_source)
         importmagic.importer.update_imports(python_source, self._index,
@@ -190,17 +238,28 @@ class ImportMagicDaemon(object):
         return dict(fromLine=start, endLine=end, text=text)
     
     def _process_request(self, request):
-        method_name = request.get('method')
-        
-        result = None
-        method = getattr(self, 'method_%s' % method_name)
-        if not method:
-            raise ValueError('Invalid method name')
-        
-        result = method(**request)
+        action = request.get('action')
 
-        if not result or type(result) != dict:
-            raise ValueError('Method must return dict')
+        result = None
+        if action == 'configure':
+            result = self.configure(**request)
+        if action == 'renew':
+            result = self.renew(**request)
+        if action == 'get_unresolved':
+            result = self.get_unresolved(**request)
+        if action == 'import_suggestions':
+            result = self.import_suggestions(**request)
+        if action == 'insert_import':
+            result = self.insert_import(**request)
+        if action == 'get_symbols':
+            result = self.get_symbols(**request)
+        if action == 'remove_unused_imports':
+            result = self.remove_unused_imports(**request)
+
+        if not result:
+            raise ValueError('Invalid action name')
+        if type(result) != dict:
+            raise Exception('Method must return a dict')
         
         return result
 
@@ -216,21 +275,27 @@ class ImportMagicDaemon(object):
 
     def watch(self):
         while True:
-            try:
-                request = json.loads(self._input.readline())
-                request_id = request.get('requestId')
+            self._readline()
 
-                if not request_id:
-                    raise ValueError('Empty request id')
+    def _readline(self):
+        try:
+            request = json.loads(self._input.readline())
+            request_id = request.get('requestId')
 
-                response = self._process_request(request)
-                json_message = dict(id=request_id, **response)
-                self._success_response(json_message)
-            except:
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                tb_info = traceback.extract_tb(exc_tb)
-                json_message = dict(error=True, id=request_id, message=str(exc_value), traceback=str(tb_info), type=str(exc_type))
-                self._error_response(json_message)
+            if not request_id:
+                raise ValueError('Empty request id')
+
+            response = self._process_request(request)
+            json_message = dict(id=request_id, **response)
+            self._success_response(json_message)
+        except:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            tb_info = traceback.extract_tb(exc_tb)
+            json_message = dict(error=True, id=request_id, 
+                message=str(exc_value), traceback=str(tb_info), 
+                type=str(exc_type))
+            self._error_response(json_message)
+
 
 if __name__ == '__main__':
     ImportMagicDaemon().watch()
