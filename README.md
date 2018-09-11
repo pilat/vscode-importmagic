@@ -47,11 +47,18 @@ ImportMagic can rebuild index each time when python files were changing (onSave)
 
 
 ## Changelog
+### 0.0.8
+- Importmagic index cache feature was temporary disabled
+
 ### 0.0.7
 - importmagic is keeping cache between restarts
 - importmagic set_style feature has implemented
 - ctrl+alt+space trigger removed
 - "Remove unused imports" has been removed (it isn't work properly)
+
+
+## Roadmap
+- Underline and remove unused imports. That would be good.
 
 
 ## License 

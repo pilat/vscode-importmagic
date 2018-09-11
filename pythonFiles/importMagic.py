@@ -28,7 +28,7 @@ class ImportMagicDaemon(object):
 
         self._paths = None
         self._skip_test_folders = False
-        self._index_file = None
+        # self._index_file = None
 
     def configure(self, **kwargs):
         workspace_path = kwargs.get('workspacePath')
@@ -37,9 +37,9 @@ class ImportMagicDaemon(object):
         temp_storage_path = kwargs.get('tempStoragePath')
 
         # Create folder if it is not exists
-        if not os.path.exists(temp_storage_path):
-            os.makedirs(temp_storage_path)
-        self._index_file = os.path.join(temp_storage_path, 'index.json')
+        # if not os.path.exists(temp_storage_path):
+        #     os.makedirs(temp_storage_path)
+        # self._index_file = os.path.join(temp_storage_path, 'index.json')
 
         style_settings = kwargs.get('style', {})
         self._style = dict(
@@ -64,12 +64,12 @@ class ImportMagicDaemon(object):
         if self._skip_test_folders != old_skip_test_folders:
             is_need_restart = True
 
-        if is_first_time:
-            self.renew(allow_cached_index=True)
-        elif is_need_restart:
-            return self.renew()
-
-        return dict(success=True)
+        # if is_first_time:
+        #     self.renew(allow_cached_index=True)
+        # elif is_need_restart:
+        #     return self.renew()
+        return self.renew()
+        # return dict(success=True)
         
     def renew(self, allow_cached_index=False, **kwargs):
         if self._skip_test_folders:
@@ -78,14 +78,16 @@ class ImportMagicDaemon(object):
             blacklist_re = re.compile(r'^$')
 
         # Try to restore cached index
-        if allow_cached_index and os.path.exists(self._index_file):
-            with open(self._index_file) as fd:
-                self._index = importmagic.SymbolIndex.deserialize(fd)
-        else:
-            self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
-            self._index.build_index(self._paths)
-            with open(self._index_file, 'w') as fd:
-                fd.write(self._index.serialize())
+        # if allow_cached_index and os.path.exists(self._index_file):
+        #     with open(self._index_file) as fd:
+        #         self._index = importmagic.SymbolIndex.deserialize(fd)
+        # else:
+        #     self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
+        #     self._index.build_index(self._paths)
+        #     with open(self._index_file, 'w') as fd:
+        #         fd.write(self._index.serialize())
+        self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
+        self._index.build_index(self._paths)
 
         return dict(success=True)
 
