@@ -44,6 +44,24 @@
                 "${workspaceFolder}/out/test/**/*.js"
             ],
             "preLaunchTask": "npm: watch"
-        }
+        },
+        {
+            "name": "Run importMagic.py",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": false,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${workspaceRoot}/pythonFiles/importMagic.py",
+            "args": [
+            ],
+            "cwd": "${workspaceFolder}/pythonFiles",
+            "env": {},
+            "debugOptions": [
+                // "WaitOnAbnormalExit",
+                // "WaitOnNormalExit",
+                "RedirectOutput",
+                "DjangoDebugging"
+            ]
+        },
     ]
 }

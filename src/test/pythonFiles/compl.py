@@ -1,1 +1,0 @@
-class SecondClass(FirstClass, Anot

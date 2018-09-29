@@ -20,7 +20,6 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
     public multiline: string = 'backslash';
     public maxColumns: number = 0;
     public indentWithTabs: boolean = false;
-    public indexRebuildPolicy: string = 'onSave';
 
     private workspaceRoot: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
@@ -87,7 +86,6 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
         this.multiline = pluginSettings.get<string>('multiline', 'backslash');
         this.maxColumns = pluginSettings.get<number>('maxColumns', 0);
         this.indentWithTabs = pluginSettings.get<boolean>('indentWithTabs', false);
-        this.indexRebuildPolicy = pluginSettings.get<string>('indexRebuildPolicy', 'onSave');
 
         if (!this.maxColumns) {
             const rulers = editorSettings.get<number[]>('rulers', []);
@@ -96,12 +94,7 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
                 this.maxColumns = rulers[0];
             }
         }
-
     }
-
-    // public get getStyle(): object {
-    //     ret
-    // }
 
     public get pythonPath(): string {
         return this._pythonPath;

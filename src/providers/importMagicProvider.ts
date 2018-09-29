@@ -1,12 +1,12 @@
 import * as fs from 'fs-extra';
 import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace} from 'vscode';
-import { IResultSuggestions, ActionType, ICommandSuggestions, ICommandImport, ICommandRemoveUnusedImports, IResultImport, IResultRemoveUnusedImports, ISuggestionItem } from './importMagicProxy';
+import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
 export interface ImportPathQuickPickItem extends QuickPickItem {
     module: string;
-    variable?: string;
+    symbol: string;
 }
 
 export class ImportMagicProvider {
@@ -18,7 +18,7 @@ export class ImportMagicProvider {
             return [];
         }
 
-        const cmd: ICommandSuggestions<IResultSuggestions> = {
+        const cmd: ICommandSuggestions<IResultSymbols> = {
             action: ActionType.Suggestions,
             sourceFile,
             unresolvedName
@@ -26,24 +26,19 @@ export class ImportMagicProvider {
 
         try{
             const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
-
             const result = await importMagic.sendCommand(cmd);
-            const candidates = result.candidates;
 
-            candidates.sort((a, b) => a.score > b.score ? -1 : 1);
-            return candidates.map(item => this.suggestionToQuickPickItem(item));
+            return result.items.map(suggestion => {
+                return {
+                    label: suggestion.module ? `from ${suggestion.module} import ${suggestion.symbol}` : `import ${suggestion.symbol}`,
+                    description: '',
+                    module: suggestion.module,
+                    symbol: suggestion.symbol
+                };
+            });
         } catch (e) {
             window.showErrorMessage(`Importmagic: ${e.message}`);
             return undefined;
-        }
-    }
-
-    public async onSave(document: TextDocument) {
-        if (document.languageId === 'python') {
-            const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
-            if (importMagic.settings.indexRebuildPolicy === 'onSave') {
-                await importMagic.renewIndex();
-            }
         }
     }
 
@@ -69,8 +64,8 @@ export class ImportMagicProvider {
         }
         const unresolvedName : string = document.getText(range);
 
-        if (!unresolvedName) {
-            window.showErrorMessage('Importmagic: Empty resolve expression');
+        if (!unresolvedName || unresolvedName.length < 2) {
+            window.showErrorMessage('Importmagic: Empty or very short expression for resolve');
             return undefined;
         }
 
@@ -88,7 +83,7 @@ export class ImportMagicProvider {
             const selection = await window.showQuickPick(suggestions, quickPickOptions);
 
             if (selection !== undefined) {
-                commands.executeCommand('importMagic.insertImport', selection.module, selection.variable);
+                commands.executeCommand('importMagic.insertImport', selection.module, selection.symbol);
             }
         } finally {
             if (tmpFileCreated) {
@@ -97,40 +92,7 @@ export class ImportMagicProvider {
         }
     }
 
-    public async removeUnusedImports() {
-        const activeEditor = window.activeTextEditor;
-        if (!activeEditor) {
-            return undefined;
-        }
-
-        const document = activeEditor.document;
-
-        if (!activeEditor || document.languageId !== 'python') {
-            window.showErrorMessage('Importmagic: Please, open a Python source for remove unused imports');
-            return undefined;
-        }
-
-        const tmpFileCreated = document.isDirty;
-        const filePath = tmpFileCreated ? await getTempFileWithDocumentContents(document) : document.fileName;
-
-        try {
-            const cmd: ICommandRemoveUnusedImports<IResultRemoveUnusedImports> = {
-                action: ActionType.RemoveUnusedImports,
-                sourceFile: filePath
-            };
-
-            const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
-            await this.updateSource(await importMagic.sendCommand(cmd));
-        } catch (e) {
-            window.showErrorMessage(`Importmagic: ${e.message}`);
-        } finally {
-            if (tmpFileCreated) {
-                fs.unlinkSync(filePath);
-            }
-        }
-    }
-
-    public async insertImport(module: string, variable?: string) {
+    public async insertImport(module: string, symbol: string) {
         const activeEditor = window.activeTextEditor;
         if (!activeEditor) {
             return undefined;
@@ -151,7 +113,7 @@ export class ImportMagicProvider {
                 action: ActionType.Import,
                 sourceFile: filePath,
                 module,
-                variable
+                symbol
             };
 
             const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
@@ -174,17 +136,9 @@ export class ImportMagicProvider {
         await importMagic.renewIndex();
     }
 
-    private suggestionToQuickPickItem(suggestion: ISuggestionItem): ImportPathQuickPickItem {
-        const module = suggestion.module;
-        const variable = suggestion.variable;
-        const path = variable ? `from ${module} import ${variable}` : `import ${module}`;
-
-        return {
-            label: path,
-            description: '', // suggestion.score.toPrecision(3),
-            module: module,
-            variable: variable ? variable : undefined
-        };
+    public openDocument(doc) {
+        this.importMagicFactory.getImportMagicProxy(doc.uri);
+        // Do noting. Watcher will be initialized for document workspace
     }
 
     private async updateSource(update: IResultImport) {

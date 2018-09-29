@@ -11,8 +11,6 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         context: CompletionContext): Promise<vscode.CompletionItem[]> {
 
         const result = await this.getCompletionResult(document, position, token);
-        //console.warn(`Result: ${result.length > 0 ? result[0].label : 'nothing'}`);
-
         if (result === undefined) {
             return [];
         }
@@ -24,33 +22,34 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         : Promise<vscode.CompletionItem[] | undefined> {
         const range = document.getWordRangeAtPosition(position);
         const text = document.getText(range);
-        if (!text) {
+        if (!text || text.length < 2) {
             return undefined;
         }
 
-        //console.warn('Search %s (pos: %s)', text, position);
         const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
+
         const cmd: ICommandSymbols<IResultSymbols> = {
             action: ActionType.Symbols,
             text
         };
         const result = await importMagic.sendCommand(cmd);
+
         return result.items.map(item => this.toVsCodeCompletion(document, position, item));
     }
 
     private toVsCodeCompletion(document: vscode.TextDocument, position: vscode.Position, item: ISuggestionSymbol): vscode.CompletionItem {
-        const completionItem = new vscode.CompletionItem(item.key);
-        switch (item.score) {
-            case 1.1:
+        const completionItem = new vscode.CompletionItem(item.symbol || item.module);
+        switch (item.kind) {
+            case 'C':
                 completionItem.kind = vscode.CompletionItemKind.Class;
                 break;
-            case 0.25:
+            case 'R':
                 completionItem.kind = vscode.CompletionItemKind.Reference;
                 break;
-            case 1.2:
+            case 'F':
                 completionItem.kind = vscode.CompletionItemKind.Function;
                 break;
-            case 1:
+            case 'M':
                 completionItem.kind = vscode.CompletionItemKind.Module;
                 break;
             default:
@@ -60,13 +59,15 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         completionItem.command = {
             command: 'importMagic.insertImport',
             title: 'Import Magic',
-            arguments: [item.module, item.variable]
+            arguments: [item.module, item.symbol]
         };
 
-        if (item.variable) {
-            completionItem.detail = `from ${item.module} import ${item.variable}`;
-        } else {
-            completionItem.detail = `import ${item.module}`;
+        completionItem.detail = item.module ? `from ${item.module} import ${item.symbol}` : `import ${item.symbol}`;
+
+        if (item.kind === 'R') {
+            // References should be below then the others
+            completionItem.sortText = completionItem.label + 'z'.repeat(30);
+            completionItem.filterText = 'z'.repeat(30) + completionItem.label;
         }
 
         return completionItem;

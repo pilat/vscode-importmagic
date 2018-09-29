@@ -18,35 +18,39 @@ Completion provider can find import candidates from whole of your project.
 
 ![Demo](https://github.com/pilat/vscode-importmagic/blob/master/images/presentation.gif?raw=true)
 
-
-When you want to force suggestions, press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
+When do you want to force suggestions, press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
 
 
 ## Settings
 > `"importMagic.maxColumns"`  
-Setting the maximum number of columns to align correctly the import block. By default it gets the first value from editor.rulers. If it's empty, the default value will be 79.  
+Setting the maximum number of columns to align correctly the import block. By default it gets the first value from editor.rulers. If it's empty, the default value will be 79.
 Default value is 0.
 
-> `"importMagic.multiline"`  
-Imports can align using backlslash or parentheses.  
+> `"importMagic.multiline"`
+Imports can align using backlslash or parentheses.
 Default value is "backslash".
 
-> `"importMagic.indentWithTabs"`  
-Make tab indents instead spaces.  
+> `"importMagic.indentWithTabs"`
+Make tab indents instead spaces.
 false by default.
-
-> `"importMagic.indexRebuildPolicy"`  
-ImportMagic can rebuild index each time when python files were changing (onSave). Or you can do it manually using "ImportMagic: Rebuild Index" from the Command Palette (manually).  
-"onSave" by default.
 
 
 ## Install notes
-- This extension need [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) extension
-- You must have installed python interpretor (see **"python.pythonPath"** in your project settings)
-- Remember: importmagic scan your files in root directory and **"python.autoComplete.extraPaths"** directories.
+- This extension needs [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+- You must have installed python interpretor (see `"python.pythonPath"` in your project settings)
+- This extension scans files from project root directory and from the all directories metioned in `"python.autoComplete.extraPaths"`.
+
+
+## Tips
+1. When you have problems with autocomplete make sure that `"python.autoComplete.extraPaths"` points to your source code. Usually this path should contain `__init__.py` file.
+2. Symbold from some packages may be unavialable when this package contains the `__all__` variable.
 
 
 ## Changelog
+### 0.0.9
+- Implements Whoosh indexing and searching library.
+- Partial index renew while files were changing.
+
 ### 0.0.8
 - Importmagic index cache feature was temporary disabled
 
@@ -64,6 +68,7 @@ ImportMagic can rebuild index each time when python files were changing (onSave)
 ## License 
 [MIT](LICENSE)
 
-Some parts of code based on https://github.com/DonJayamanne/pythonVSCode
-
-This extension based https://github.com/alecthomas/importmagic
+- Some parts of code based on https://github.com/DonJayamanne/pythonVSCode
+- This extension based https://github.com/alecthomas/importmagic
+- Also we use Whoosh https://bitbucket.org/mchaput/whoosh/overview
+ 

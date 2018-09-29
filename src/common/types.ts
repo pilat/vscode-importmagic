@@ -47,7 +47,6 @@ export interface IExtensionSettings {
     multiline: string;
     maxColumns: number;
     indentWithTabs: boolean;
-    indexRebuildPolicy: string;
 }
 
 /**

@@ -1,303 +1,69 @@
-import io
 import os
-import re
 import sys
+import io
 import json
-import time
+import sys
 import traceback
 
-try:
-    import importmagic
-except:
-    json_message = {'error': True, 'message': 'Importmagic not installed', 
-                   'traceback': '', 'type': 'ModuleNotFoundError'}
-    sys.stderr.write(json.dumps(json_message))
-    sys.stderr.write('\n')
-    sys.stderr.flush()
+# Add libs into sys.path
+sys.path.insert(0, os.path.join(os.getcwd(), 'libs'))
+
+from src.classes.extension import Extension
 
 
-ITEMS_LIMIT = 50
-
-
-class ImportMagicDaemon(object):
-    def __init__(self):
+class ImportMagicDaemon(Extension):
+    def __init__(self, daemon):
         self._input = io.open(sys.stdin.fileno(), encoding='utf-8')
-        self._index = None
-        self._style = dict(multiline='backslash', 
-            max_columns=79, indent_with_tabs=False)
+        self._daemon = daemon
+        super(ImportMagicDaemon, self).__init__()
 
-        self._paths = None
-        self._skip_test_folders = False
-        # self._index_file = None
-
-    def configure(self, **kwargs):
-        workspace_path = kwargs.get('workspacePath')
-        extra_paths = kwargs.get('extraPaths', [])
-        skip_test_folders = kwargs.get('skipTestFolders')
-        temp_storage_path = kwargs.get('tempStoragePath')
-
-        # Create folder if it is not exists
-        # if not os.path.exists(temp_storage_path):
-        #     os.makedirs(temp_storage_path)
-        # self._index_file = os.path.join(temp_storage_path, 'index.json')
-
-        style_settings = kwargs.get('style', {})
-        self._style = dict(
-            multiline=style_settings.get('multiline', 'backslash'), 
-            max_columns=style_settings.get('maxColumns', 79),
-            indent_with_tabs=style_settings.get('indentWithTabs', False)
-        )
-
-        if not workspace_path:
-            raise ValueError('Empty workspacePath')
-
-        is_need_restart = False
-        is_first_time = self._paths is None
-
-        old_paths = self._paths
-        self._paths = list(set(extra_paths + [workspace_path] + sys.path))
-        if self._paths != old_paths:
-            is_need_restart = True
-
-        old_skip_test_folders = self._skip_test_folders
-        self._skip_test_folders = skip_test_folders
-        if self._skip_test_folders != old_skip_test_folders:
-            is_need_restart = True
-
-        # if is_first_time:
-        #     self.renew(allow_cached_index=True)
-        # elif is_need_restart:
-        #     return self.renew()
-        return self.renew()
-        # return dict(success=True)
-        
-    def renew(self, allow_cached_index=False, **kwargs):
-        if self._skip_test_folders:
-            blacklist_re = importmagic.index.DEFAULT_BLACKLIST_RE
-        else:
-            blacklist_re = re.compile(r'^$')
-
-        # Try to restore cached index
-        # if allow_cached_index and os.path.exists(self._index_file):
-        #     with open(self._index_file) as fd:
-        #         self._index = importmagic.SymbolIndex.deserialize(fd)
-        # else:
-        #     self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
-        #     self._index.build_index(self._paths)
-        #     with open(self._index_file, 'w') as fd:
-        #         fd.write(self._index.serialize())
-        self._index = importmagic.SymbolIndex(blacklist_re=blacklist_re)
-        self._index.build_index(self._paths)
-
-        return dict(success=True)
-
-    def get_unresolved(self, **kwargs):
-        source_file = kwargs.get('sourceFile')
-        
-        if not source_file:
-            raise ValueError('Empty sourceFile')
-
-        if not self._index:
-            raise Exception('Run configure() at first')
-
-        with open(source_file, 'r') as fd:
-            python_source = fd.read()
-        scope = importmagic.Scope.from_source(python_source)
-
-        unresolved, unreferenced = \
-                            scope.find_unresolved_and_unreferenced_symbols()
-
-        return dict(unresolved=list(unresolved), 
-            unreferenced=list(unreferenced))
-
-    def import_suggestions(self, **kwargs):
-        source_file = kwargs.get('sourceFile')
-        unresolved_name = kwargs.get('unresolvedName')
-        
-        if not source_file:
-            raise ValueError('Empty sourceFile')
-
-        if not unresolved_name:
-            raise ValueError('Empty unresolvedName')
-
-        if not self._index:
-            raise Exception('Run configure() at first')
-
-        with open(source_file, 'r') as fd:
-            python_source = fd.read()
-        scope = importmagic.Scope.from_source(python_source)
-
-        _unresolved, _unreferenced = \
-                            scope.find_unresolved_and_unreferenced_symbols()
-
-        # Sometimes unresolved may contain "sys.path".
-        # Split this cases for find "sys.path", "sys" and "path"
-        unresolved = set()
-        for item1 in _unresolved:
-            for item2 in item1.split('.'):
-                unresolved.add(item2)
-
-        if unresolved_name not in unresolved:
-            raise Exception('Import this expression is not necessary')
-
-        candidates = []
-        for score, module, variable in \
-            self._index.symbol_scores(unresolved_name):
-            candidates.append(dict(score=score, module=module, 
-                                    variable=variable))
-            if len(candidates) >= ITEMS_LIMIT:
-                break
-
-        return dict(candidates=candidates)
-
-    def insert_import(self, **kwargs):
-        source_file = kwargs.get('sourceFile')
-        
-        module = kwargs.get('module')
-        variable = kwargs.get('variable')
-
-        if not source_file:
-            raise ValueError('Empty sourceFile')
-        
-        if not module:
-            raise ValueError('Empty module')
-
-        if not self._index:
-            raise Exception('Run configure() at first')
-
-        with open(source_file, 'r') as fd:
-            python_source = fd.read()
-        
-        imports = importmagic.Imports(self._index, python_source)
-        imports.set_style(**self._style)
-
-        if variable is None:
-            imports.add_import(module)
-        else:
-            imports.add_import_from(module, variable)
-        start, end, text = imports.get_update()
-        return dict(fromLine=start, endLine=end, text=text)
-
-    def get_symbols(self, **kwargs):
-        find = kwargs.get('text', '').replace('_', '').lower()
-        
-        if not self._index:
-            raise Exception('Run configure() at first')
-
-        results = {}
-
-        def scan_tree(scope):
-            for key, subscope in scope._tree.items():
-                if type(subscope) is not float:
-                    get_result(key, scope, subscope.score)
-                    scan_tree(subscope)
-                else:
-                    get_result(key, scope, subscope)
-                    
-        def get_result(key, scope, key_score):
-            k = key.replace('_', '').lower()
-            if not k.startswith(find):
-                return
-            
-            score = -(key_score + (100-scope.depth())*10)
-            if k not in results or results[k]['_score'] > score:
-                if scope.path():
-                    module = scope.path()
-                    variable = key
-                else:
-                    module = key
-                    variable = None
-
-                results[k] = dict(key=key, module=module, variable=variable,
-                    depth=scope.depth(), _score=score, score=key_score)
-
-
-        scan_tree(self._index)
-        
-        return dict(items=sorted(results.values(), 
-            key=lambda x: x['_score'])[:ITEMS_LIMIT])
-
-    def remove_unused_imports(self, **kwargs):
-        source_file = kwargs.get('sourceFile')
-
-        if not source_file:
-            raise ValueError('Empty sourceFile')   
-
-        if not self._index:
-            raise Exception('Run configure() at first')
-
-        with open(source_file, 'r') as fd:
-            python_source = fd.read()
-
-        imports = importmagic.Imports(self._index, python_source)
-        imports.set_style(**self._style)
-
-        scope = importmagic.Scope.from_source(python_source)
-        importmagic.importer.update_imports(python_source, self._index,
-            *scope.find_unresolved_and_unreferenced_symbols())
-
-        start, end, text = imports.get_update()
-        return dict(fromLine=start, endLine=end, text=text)
-    
     def _process_request(self, request):
         action = request.get('action')
+        cmd = Extension._COMMANDS.get(action)
+        if not cmd:
+            raise ValueError('Invalid action')
+        result = cmd(self, **request)
+        return result if isinstance(result, dict) else dict(success=True)
 
-        result = None
-        if action == 'configure':
-            result = self.configure(**request)
-        if action == 'renew':
-            result = self.renew(**request)
-        if action == 'get_unresolved':
-            result = self.get_unresolved(**request)
-        if action == 'import_suggestions':
-            result = self.import_suggestions(**request)
-        if action == 'insert_import':
-            result = self.insert_import(**request)
-        if action == 'get_symbols':
-            result = self.get_symbols(**request)
-        if action == 'remove_unused_imports':
-            result = self.remove_unused_imports(**request)
-
-        if not result:
-            raise ValueError('Invalid action name')
-        if type(result) != dict:
-            raise Exception('Method must return a dict')
-        
-        return result
-
-    def _error_response(self, response):
+    def _error_response(self, **response):
         sys.stderr.write(json.dumps(response))
         sys.stderr.write('\n')
         sys.stderr.flush()
 
-    def _success_response(self, response):
+    def _success_response(self, **response):
         sys.stdout.write(json.dumps(response))
         sys.stdout.write('\n')
         sys.stdout.flush()
 
     def watch(self):
         while True:
-            self._readline()
+            if self._daemon:
+                try:
+                    self._readline()
+                except:
+                    exc_type, exc_value, exc_tb = sys.exc_info()
+                    tb_info = traceback.extract_tb(exc_tb)
+                    json_message = dict(
+                        error=True, id=request_id, message=str(exc_value), 
+                        traceback=str(tb_info), type=str(exc_type))
+                    self._error_response(**json_message)
+            else:
+                self._readline()
 
     def _readline(self):
-        try:
-            request = json.loads(self._input.readline())
-            request_id = request.get('requestId')
+        request_id = None
+        # try:
+        request = json.loads(self._input.readline())
+        request_id = request.get('requestId')
 
-            if not request_id:
-                raise ValueError('Empty request id')
+        if not request_id:
+            raise ValueError('Empty request id')
 
-            response = self._process_request(request)
-            json_message = dict(id=request_id, **response)
-            self._success_response(json_message)
-        except:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            tb_info = traceback.extract_tb(exc_tb)
-            json_message = dict(error=True, id=request_id, 
-                message=str(exc_value), traceback=str(tb_info), 
-                type=str(exc_type))
-            self._error_response(json_message)
+        response = self._process_request(request)
+        json_message = dict(id=request_id, **response)
+        self._success_response(**json_message)
 
 
 if __name__ == '__main__':
-    ImportMagicDaemon().watch()
+    # Extension starts the daemon with -d
+    ImportMagicDaemon('-d' in sys.argv).watch()

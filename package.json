@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {
@@ -85,16 +85,6 @@
                     "default": false,
                     "description": "ImportMagic may using tabs when makes multiline indents",
                     "scope": "resource"
-                },
-                "importMagic.indexRebuildPolicy": {
-                    "type": "string",
-                    "enum": [
-                        "onSave",
-                        "manually"
-                    ],
-                    "default": "onSave",
-                    "description": "ImportMagic can rebuild the index every time when some file changes. Or it can do it manually from the Command Palette.",
-                    "scope": "resource"
                 }
             }
         }
@@ -110,22 +100,21 @@
     ],
     "dependencies": {
         "fs-extra": "^4.0.2",
-        "lodash": "^4.17.4",
         "iconv-lite": "^0.4.19",
+        "lodash": "^4.17.4",
         "rxjs": "^5.5.2",
         "tmp": "0.0.29",
         "untildify": "^3.0.2"
     },
     "devDependencies": {
-        "typescript": "^2.6.2",
-        "@types/node": "^7.0.43",
         "@types/fs-extra": "^4.0.2",
-        "@types/lodash": "^4.14.74",
         "@types/iconv-lite": "0.0.1",
-        "debounce": "^1.1.0",
+        "@types/lodash": "^4.14.74",
+        "@types/mocha": "^2.2.42",
+        "@types/node": "^7.0.43",
         "tslint": "^5.7.0",
         "tslint-microsoft-contrib": "^5.0.1",
-        "vscode": "^1.1.5",
-        "@types/mocha": "^2.2.42"
+        "typescript": "^2.6.2",
+        "vscode": "^1.1.5"
     }
 }
