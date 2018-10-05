@@ -2,9 +2,11 @@ const PREFIX = 'Python Importmagic: ';
 
 export class Logger {
     public logError(message: string, ex?: Error) {
+        // tslint:disable-next-line:no-console
         console.error(`${PREFIX}${message}`, error);
     }
     public logWarning(message: string, ex?: Error) {
+        // tslint:disable-next-line:no-console
         console.warn(`${PREFIX}${message}`, ex);
     }
 }

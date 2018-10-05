@@ -24,6 +24,6 @@ export class FileSystemWatcher {
         this.timeout = setTimeout(() => {
             this.listener(this.changedFiles);
             this.changedFiles = new Set();
-        }, 1000);
+        }, 2000);
     }
 }

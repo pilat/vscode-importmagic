@@ -82,6 +82,9 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
         this.pythonPath = getAbsolutePath(this.pythonPath, workspaceRoot);
 
         this.extraPaths = systemVariables.resolveAny(pythonSettings.get<string[]>('autoComplete.extraPaths'))!;
+        if (!Array.isArray(this.extraPaths)) {
+            this.extraPaths = [this.extraPaths];
+        }
 
         this.multiline = pluginSettings.get<string>('multiline', 'backslash');
         this.maxColumns = pluginSettings.get<number>('maxColumns', 0);

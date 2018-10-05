@@ -14,21 +14,29 @@ DB_VERSION = 2
 
 
 class IndexManager(object):
-    def __init__(self, data_path):
+    def __init__(self, data_path, workspace_hash_name):
         self._report_listener = None
         self._last_report_time = 0
         self._total_items = 0
         self._writer = None
         
-        # Create target path
+        # Create target temp path
         if not path.exists(data_path):
             mkdir(data_path)
 
         self._data_path = data_path
+        self._workspace_hash_name = workspace_hash_name
+
+        # Create workspace target path
+        if not path.exists(self._get_path()):
+            mkdir(self._get_path())
+
+    def _get_path(self):
+        return path.join(self._data_path, self._workspace_hash_name)
 
     def open(self):
         # Read settings file or set default values
-        config_file_name = path.join(self._data_path, 'config.json')
+        config_file_name = path.join(self._get_path(), 'config.json')
         cfg = {}
         try:
             with open(config_file_name, 'r') as f:
@@ -50,10 +58,10 @@ class IndexManager(object):
         return exist, python_version, sys_modules_count, db_version
 
     def _open_index(self):
-        self._ix = index.open_dir(self._data_path, schema=IndexSchema)
+        self._ix = index.open_dir(self._get_path(), schema=IndexSchema)
     
     def recreate_index(self):
-        self._ix = index.create_in(self._data_path, schema=IndexSchema)
+        self._ix = index.create_in(self._get_path(), schema=IndexSchema)
 
     def _add_document(self, filename, symbol, module, location, kind, 
                       score, **kwargs):
@@ -124,7 +132,7 @@ class IndexManager(object):
         cfg = dict(python_version=sys.version, 
                    sys_modules_count=sys_modules_count,
                    db_version=DB_VERSION)
-        config_file_name = path.join(self._data_path, 'config.json')
+        config_file_name = path.join(self._get_path(), 'config.json')
         try:
             with open(config_file_name, 'w') as f:
                 json.dump(cfg, f)

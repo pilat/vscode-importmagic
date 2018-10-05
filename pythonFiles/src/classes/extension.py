@@ -3,6 +3,7 @@ import sys
 import importmagic
 from src.classes.index_manager import IndexManager, DB_VERSION
 from src.classes.indexer import DirIndexer, FileIndexer, QuickIndexer
+from src.utils import md5_hash
 
 
 class Extension(object):
@@ -13,6 +14,7 @@ class Extension(object):
         self._paths = []
         self._skip_tests = True
         self._temp_path = None
+        self._workspace_hash = None
         self._index_manager = None
 
     @property
@@ -66,6 +68,14 @@ class Extension(object):
     @temp_path.setter
     def temp_path(self, value):
         self._temp_path = value
+    
+    @property
+    def workspace_hash(self):
+        return self._workspace_hash
+
+    @workspace_hash.setter
+    def workspace_hash(self, value):
+        self._workspace_hash = value
 
     @property
     def style(self):
@@ -93,12 +103,16 @@ class Extension(object):
         if not self.temp_path:
             raise Exception('Empty temp_path')
 
+        workspace_name = kwargs.get('workspaceName', 'default')
+        self.workspace_hash = md5_hash(workspace_name)[:8]
+
     def _cmd_configure(self, **kwargs):
         if not self._index_manager:
             # First time
             self._apply_settings(**kwargs)
 
-            self._index_manager = IndexManager(self.temp_path)
+            self._index_manager = IndexManager(self.temp_path,
+                                               self.workspace_hash)
             exists, py_ver, sys_modules_count, db_version = \
                 self._index_manager.open()
             if not exists:
@@ -259,7 +273,7 @@ class Extension(object):
                 unresolved.add(item2)
 
         if unresolved_name not in unresolved:
-            raise Exception('Import this expression is not necessary')
+            return dict(items=[])
 
         results = []
         for f in self._index_manager.search(unresolved_name):

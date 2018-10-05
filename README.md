@@ -42,11 +42,15 @@ false by default.
 
 
 ## Tips
-1. When you have problems with autocomplete make sure that `"python.autoComplete.extraPaths"` points to your source code. Usually this path should contain `__init__.py` file.
-2. Symbold from some packages may be unavialable when this package contains the `__all__` variable.
+1. When you have problems with autocomplete make sure that `"python.autoComplete.extraPaths"` points to your source code.
+2. Symbols from some packages may be unavialable when this package contains the `__all__` variable.
 
 
 ## Changelog
+### 0.0.10
+- Working with Multi-root Workspaces was fixed
+- Minor changes
+
 ### 0.0.9
 - Implements Whoosh indexing and searching library.
 - Partial index renew while files were changing.
@@ -63,6 +67,7 @@ false by default.
 
 ## Roadmap
 - Underline and remove unused imports. That would be good.
+- When project or module path contain "test", symbols won't be collected
 
 
 ## License 

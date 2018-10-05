@@ -70,6 +70,7 @@ interface ICommandConfigure<T extends ICommandResult> extends ICommand<T> {
     skipTest: boolean;
     style: object;
     tempPath: string;
+    workspaceName: string;
 }
 
 interface ICommandChangeFiles<T extends ICommandResult> extends ICommand<T> {
@@ -107,7 +108,8 @@ export class ImportMagicProxy {
     private progress: Progress = new Progress();
     private fsWatcher: FileSystemWatcher;
 
-    constructor(private extensionRootDir: string, private workspacePath: string, private storagePath: string) {
+    constructor(private extensionRootDir: string, private workspacePath: string,
+            private storagePath: string, private workspaceName: string) {
         this.settings = ExtensionSettings.getInstance(vscode.Uri.file(this.workspacePath));
         this.settings.on('change', this.onChangeSettings.bind(this));
 
@@ -157,6 +159,7 @@ export class ImportMagicProxy {
             paths: this.getExtraPaths(),
             skipTest: !isTest,
             tempPath: this.storagePath,
+            workspaceName: this.workspaceName,
             style: {
                 multiline: this.settings.multiline,
                 maxColumns: this.settings.maxColumns,
@@ -196,7 +199,8 @@ export class ImportMagicProxy {
         this.proc = result.proc;
 
         if (!result.proc.pid) {
-            this.languageServerStarted.reject({message: 'Importmagic: Python interpreter not found'});
+            this.languageServerStarted.reject({message: 'Importmagic: Python interpreter is not found'});
+            vscode.window.showErrorMessage('Importmagic: Python interpreter is not found');
             return false;
         }
 

@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {

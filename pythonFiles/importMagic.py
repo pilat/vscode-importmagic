@@ -37,31 +37,25 @@ class ImportMagicDaemon(Extension):
 
     def watch(self):
         while True:
-            if self._daemon:
-                try:
-                    self._readline()
-                except:
-                    exc_type, exc_value, exc_tb = sys.exc_info()
-                    tb_info = traceback.extract_tb(exc_tb)
-                    json_message = dict(
-                        error=True, id=request_id, message=str(exc_value), 
-                        traceback=str(tb_info), type=str(exc_type))
-                    self._error_response(**json_message)
-            else:
-                self._readline()
+            try:
+                request = json.loads(self._input.readline())
+                request_id = request.get('requestId')
 
-    def _readline(self):
-        request_id = None
-        # try:
-        request = json.loads(self._input.readline())
-        request_id = request.get('requestId')
+                if not request_id:
+                    raise ValueError('Empty request id')
 
-        if not request_id:
-            raise ValueError('Empty request id')
-
-        response = self._process_request(request)
-        json_message = dict(id=request_id, **response)
-        self._success_response(**json_message)
+                response = self._process_request(request)
+                json_message = dict(id=request_id, **response)
+                self._success_response(**json_message)
+            except:
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                tb_info = traceback.extract_tb(exc_tb)
+                json_message = dict(
+                    error=True, id=request_id, message=str(exc_value), 
+                    traceback=str(tb_info), type=str(exc_type))
+                self._error_response(**json_message)
+                if not self._daemon:
+                    break
 
 
 if __name__ == '__main__':
