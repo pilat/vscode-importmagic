@@ -1,5 +1,5 @@
 import * as fs from 'fs-extra';
-import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace} from 'vscode';
+import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace, CancellationTokenSource} from 'vscode';
 import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
@@ -71,6 +71,7 @@ export class ImportMagicProvider {
 
         const tmpFileCreated = document.isDirty;
         const filePath = tmpFileCreated ? await getTempFileWithDocumentContents(document) : document.fileName;
+        const cToken: CancellationTokenSource = new CancellationTokenSource();
 
         try {
             const quickPickOptions: QuickPickOptions = {
@@ -80,12 +81,19 @@ export class ImportMagicProvider {
             };
 
             const suggestions = this.getImportSuggestions(filePath, unresolvedName);
-            const selection = await window.showQuickPick(suggestions, quickPickOptions);
+            suggestions.then((results: ImportPathQuickPickItem[]) => {
+                if (results === undefined || results.length === 0) {
+                    window.showWarningMessage('Importmagic: Nothing to import');
+                    cToken.cancel();
+                }
+            });
+            const selection = await window.showQuickPick(suggestions, quickPickOptions, cToken.token);
 
             if (selection !== undefined) {
                 commands.executeCommand('importMagic.insertImport', selection.module, selection.symbol);
             }
         } finally {
+            cToken.dispose();
             if (tmpFileCreated) {
                 fs.unlinkSync(filePath);
             }
