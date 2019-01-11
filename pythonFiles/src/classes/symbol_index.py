@@ -102,7 +102,7 @@ class ExtendedSymbolIndex(SymbolIndex, SymbolIndexAccelerator):
                     alias._tree = tree._tree
 
         yield tree
-        if tree._exports:
+        if tree._exports is not None:
             # Delete unexported variables
             for key in set(tree._tree) - set(tree._exports):
                 del tree._tree[key]

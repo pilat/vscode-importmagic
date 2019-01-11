@@ -64,7 +64,7 @@ class Indexer(object):  # Manager for ExtendedSymbolIndex
                 score = subscope
 
             kind = 'T'  # Text
-            if score == 1.1:
+            if score == 1.1 or score == 1.2:
                 kind = 'C'  # Class
             if score == 0.25:
                 kind = 'R'  # Reference
