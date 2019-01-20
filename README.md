@@ -10,21 +10,19 @@
 [![Marketplace Version](https://vsmarketplacebadge.apphb.com/version/brainfit.vscode-importmagic.svg)](https://marketplace.visualstudio.com/items?itemName=brainfit.vscode-importmagic) 
 <!-- [![Build Status](https://travis-ci.org/pilat/vscode-importmagic.svg?branch=master)](https://travis-ci.org/pilat/vscode-importmagic) -->
 
-## Find unresolved symbols in Python code.
+## It helps to find unresolved imports
 
-This Visual Studio Code extension allow to find unresolved symbols in Python code and make import them.
-
-Completion provider can find import candidates from whole of your project.
+This Visual Studio Code extension allows to find unresolved symbols in your Python code and helps to import them.
 
 ![Demo](https://github.com/pilat/vscode-importmagic/blob/master/images/presentation.gif?raw=true)
 
-When do you want to force suggestions, press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
+If you want force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
 
 
 ## Configuration
 1. You can use `.isort.cfg` in your project: [see more details here](https://github.com/timothycrosley/isort).
 
-2. If your project contain `editor.rulers` option extension will take the first value from there and assign it as `line_length` for iSort.
+2. If your project contain `editor.rulers` option, extension will take the first value from there and assign it as `line_length` for iSort.
 
 3. You can override line_length with option `importMagic.maxColumns`.
 
@@ -34,22 +32,17 @@ When do you want to force suggestions, press <kbd>ctrl</kbd> + <kbd>space</kbd> 
 
 ## Install notes
 - This extension needs [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-- You must have installed python interpretor (see `"python.pythonPath"` in your project settings)
-- This extension scans files from project root directory and from the all directories metioned in `"python.autoComplete.extraPaths"`.
+- You must have installed python interpretor (see `"python.pythonPath"` in your project settings). Python 2.7 and 3.4+ are supported.
+- This extension will scan project root directory and the all directories which metioned in `"python.autoComplete.extraPaths"`.
 
 
 ## Tips
-1. When you have problems with autocomplete make sure that `"python.autoComplete.extraPaths"` points to your source code.
+1. If you have problem with autocomplete make sure that `"python.autoComplete.extraPaths"` option contains the path with your source code.
 2. Symbols from some packages may be unavialable when this package contains the `__all__` variable.
 
 
-## Changelog
-
-
-
 ## Roadmap
-- Underline and remove unused imports. That would be good.
-- When project or module path contain "test", symbols won't be collected
+- Tests :|
 
 
 ## License 
