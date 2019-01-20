@@ -21,18 +21,15 @@ Completion provider can find import candidates from whole of your project.
 When do you want to force suggestions, press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
 
 
-## Settings
-> `"importMagic.maxColumns"`  
-Setting the maximum number of columns to align correctly the import block. By default it gets the first value from editor.rulers. If it's empty, the default value will be 79.
-Default value is 0.
+## Configuration
+1. You can use `.isort.cfg` in your project: [see more details here](https://github.com/timothycrosley/isort).
 
-> `"importMagic.multiline"`
-Imports can align using backlslash or parentheses.
-Default value is "backslash".
+2. If your project contain `editor.rulers` option extension will take the first value from there and assign it as `line_length` for iSort.
 
-> `"importMagic.indentWithTabs"`
-Make tab indents instead spaces.
-false by default.
+3. You can override line_length with option `importMagic.maxColumns`.
+
+- `importMagic.multiline`: Imports can be aligned with `backlslash` or `parentheses`. By-default this option is undefined. Alignment will be applied with iSort defaults.
+- `importMagic.indentWithTabs`: Make tab indents instead four spaces. By-default this option undefined.
 
 
 ## Install notes
@@ -47,22 +44,7 @@ false by default.
 
 
 ## Changelog
-### 0.0.10
-- Working with Multi-root Workspaces was fixed
-- Minor changes
 
-### 0.0.9
-- Implements Whoosh indexing and searching library.
-- Partial index renew while files were changing.
-
-### 0.0.8
-- Importmagic index cache feature was temporary disabled
-
-### 0.0.7
-- importmagic is keeping cache between restarts
-- importmagic set_style feature has implemented
-- ctrl+alt+space trigger removed
-- "Remove unused imports" has been removed (it isn't work properly)
 
 
 ## Roadmap
@@ -76,4 +58,5 @@ false by default.
 - Some parts of code based on https://github.com/DonJayamanne/pythonVSCode
 - This extension based https://github.com/alecthomas/importmagic
 - Also we use Whoosh https://bitbucket.org/mchaput/whoosh/overview
+- iSort prepares import blocks: https://github.com/timothycrosley/isort
  

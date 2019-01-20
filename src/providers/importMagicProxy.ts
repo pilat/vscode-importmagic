@@ -10,6 +10,19 @@ import { ChildProcess } from 'child_process';
 import { createDeferred, Deferred } from '../common/helpers';
 import { isTestExecution } from '../common/utils';
 
+export enum DiffAction {
+    Delete = 'delete',
+    Insert = 'insert',
+    Replace = 'replace'
+}
+
+export interface IDiffCommand {
+    action: DiffAction;
+    start: number;
+    end: number;
+    text?: string;
+}
+
 export enum ActionType {
     Configure = 'configure',
     ChangeFiles = 'changeFiles',
@@ -46,9 +59,7 @@ export interface IResultSymbols extends ICommandResult {
 }
 
 export interface IResultImport extends ICommandResult {
-    fromLine: number;
-    endLine: number;
-    text: string;
+    commands: IDiffCommand[];
 }
 
 interface IResultError extends ICommandResult {
@@ -67,6 +78,7 @@ export interface ICommand<T extends ICommandResult> {
 
 interface ICommandConfigure<T extends ICommandResult> extends ICommand<T> {
     paths: string[];
+    workspacePath: string;
     skipTest: boolean;
     style: object;
     tempPath: string;
@@ -98,7 +110,7 @@ export interface ICommandImport<T extends ICommandResult> extends ICommand<T> {
 export class ImportMagicProxy {
     public settings: ExtensionSettings;
 
-    private proc: ChildProcess | null;
+    private proc: ChildProcess;
     private previousData = '';
 
     private languageServerStarted: Deferred<void>;
@@ -157,14 +169,11 @@ export class ImportMagicProxy {
         const cmd: ICommandConfigure<IResultConfigure> = {
             action: ActionType.Configure,
             paths: this.getExtraPaths(),
+            workspacePath: this.workspacePath,
             skipTest: !isTest,
             tempPath: this.storagePath,
             workspaceName: this.workspaceName,
-            style: {
-                multiline: this.settings.multiline,
-                maxColumns: this.settings.maxColumns,
-                indentWithTabs: this.settings.indentWithTabs
-            }
+            style: this.settings.style
         };
         await this.sendRequest(cmd);
     }
@@ -391,9 +400,7 @@ export class ImportMagicProxy {
     private onImport(command: ICommand<ICommandResult>, response: object): IResultImport {
         return {
             requestId: command.commandId,
-            fromLine: ImportMagicProxy.getProperty<number>(response, 'fromLine'),
-            endLine: ImportMagicProxy.getProperty<number>(response, 'endLine'),
-            text: ImportMagicProxy.getProperty<string>(response, 'text') || ''
+            commands: ImportMagicProxy.getProperty<IDiffCommand[]>(response, 'diff')
         };
     }
 

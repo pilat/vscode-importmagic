@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { ConfigurationTarget, Uri } from 'vscode';
 
 import { SystemVariables } from './systemVariables';
-import { IExtensionSettings } from './types';
+import { IExtensionSettings, IStyle } from './types';
 import { isTestExecution } from './utils';
 
 import * as child_process from 'child_process';
@@ -17,9 +17,9 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
     private static instances: Map<string, ExtensionSettings> = new Map<string, ExtensionSettings>();
 
     public extraPaths: string[] = [];
-    public multiline: string = 'backslash';
-    public maxColumns: number = 0;
-    public indentWithTabs: boolean = false;
+    private multiline: string = null;
+    private maxColumns: number = null;
+    private indentWithTabs: boolean = null;
 
     private workspaceRoot: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
@@ -86,13 +86,12 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
             this.extraPaths = [this.extraPaths];
         }
 
-        this.multiline = pluginSettings.get<string>('multiline', 'backslash');
-        this.maxColumns = pluginSettings.get<number>('maxColumns', 0);
-        this.indentWithTabs = pluginSettings.get<boolean>('indentWithTabs', false);
+        this.multiline = pluginSettings.get('multiline');
+        this.maxColumns = pluginSettings.get('maxColumns');
+        this.indentWithTabs = pluginSettings.get('indentWithTabs');
 
         if (!this.maxColumns) {
             const rulers = editorSettings.get<number[]>('rulers', []);
-            this.maxColumns = 79;
             if (rulers.length > 0 && rulers[0] > 39) {
                 this.maxColumns = rulers[0];
             }
@@ -113,6 +112,21 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
         } catch (ex) {
             this._pythonPath = value;
         }
+    }
+
+    public get style(): IStyle {
+        const obj: IStyle = {};
+        if (this.multiline !== null) {
+            obj.multiline = this.multiline;
+        }
+        if (this.maxColumns !== null) {
+            obj.maxColumns = this.maxColumns;
+        }
+        if (this.indentWithTabs !== null) {
+            obj.indentWithTabs = this.indentWithTabs;
+        }
+
+        return obj;
     }
 }
 
@@ -140,7 +154,7 @@ function getPythonExecutable(pythonPath: string): string {
     }
 
     // Keep python right on top, for backwards compatibility.
-    const KnownPythonExecutables = ['python', 'python4', 'python3.6', 'python3.5', 'python3', 'python2.7', 'python2'];
+    const KnownPythonExecutables = ['python', 'python4', 'python3.7', 'python3.6', 'python3.5', 'python3', 'python2.7', 'python2'];
 
     for (let executableName of KnownPythonExecutables) {
         // Suffix with 'python' for linux and 'osx', and 'python.exe' for 'windows'.

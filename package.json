@@ -2,7 +2,7 @@
     "name": "vscode-importmagic",
     "displayName": "Importmagic",
     "description": "Python auto imports",
-    "version": "0.0.11",
+    "version": "0.1.0",
     "icon": "images/icon.png",
     "publisher": "brainfit",
     "author": {
@@ -20,7 +20,7 @@
         "django",
         "import",
         "suggestions",
-        "ctag"
+        "isort"
     ],
     "repository": {
         "url": "https://github.com/pilat/vscode-importmagic.git"
@@ -70,19 +70,19 @@
                         "backslash",
                         "parentheses"
                     ],
-                    "default": "backslash",
+                    "default": null,
                     "description": "How importMagic should wrap multiline imports",
                     "scope": "resource"
                 },
                 "importMagic.maxColumns": {
                     "type": "number",
-                    "default": 0,
+                    "default": null,
                     "description": "Maximal columns in your project",
                     "scope": "resource"
                 },
                 "importMagic.indentWithTabs": {
                     "type": "boolean",
-                    "default": false,
+                    "default": null,
                     "description": "ImportMagic may using tabs when makes multiline indents",
                     "scope": "resource"
                 }

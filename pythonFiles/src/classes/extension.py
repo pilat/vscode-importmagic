@@ -3,19 +3,23 @@ import sys
 import importmagic
 from src.classes.index_manager import IndexManager, DB_VERSION
 from src.classes.indexer import DirIndexer, FileIndexer, QuickIndexer
+from src.classes.extended_isort import ExtendedSortImports
 from src.utils import md5_hash
+from isort.settings import WrapModes
 
 
 class Extension(object):
     def __init__(self):
-        self._style_multiline = 'backslash'
-        self._style_max_columns = 79
-        self._style_indent_with_tabs = False
+        self._style_multiline = None
+        self._style_max_columns = None
+        self._style_indent_with_tabs = None
+
+        self._workspace_path = None  # .isort.cfg could be placed there
         self._paths = []
         self._skip_tests = True
         self._temp_path = None
-        self._workspace_hash = None
         self._index_manager = None
+        self.workspace_hash = None
 
     @property
     def style_multiline(self):
@@ -23,9 +27,8 @@ class Extension(object):
 
     @style_multiline.setter
     def style_multiline(self, value):
-        if value not in ('backslash', 'parentheses'):
-            raise ValueError('Invalid style_multiline value')
-        self._style_multiline = value
+        if value in (None, 'backslash', 'parentheses'):
+            self._style_multiline = value
 
     @property
     def style_max_columns(self):
@@ -33,7 +36,10 @@ class Extension(object):
 
     @style_max_columns.setter
     def style_max_columns(self, value):
-        self._style_max_columns = int(value)
+        if value is None or isinstance(value, int):
+            self._style_max_columns = value
+        elif isinstance(value, str) and value.isnumeric():
+            self._style_max_columns = int(value)
 
     @property
     def style_indent_with_tabs(self):
@@ -41,7 +47,8 @@ class Extension(object):
 
     @style_indent_with_tabs.setter
     def style_indent_with_tabs(self, value):
-        self._style_indent_with_tabs = bool(value)
+        if value is None or isinstance(value, bool):
+            self._style_indent_with_tabs = value
 
     @property
     def paths(self):
@@ -52,6 +59,14 @@ class Extension(object):
         if not isinstance(value, list):
             raise TypeError('Paths must be list')
         self._paths = value
+
+    @property
+    def workspace_path(self):
+        return self._workspace_path
+
+    @workspace_path.setter
+    def workspace_path(self, value):
+        self._workspace_path = value
 
     @property
     def skip_tests(self):
@@ -69,20 +84,6 @@ class Extension(object):
     def temp_path(self, value):
         self._temp_path = value
     
-    @property
-    def workspace_hash(self):
-        return self._workspace_hash
-
-    @workspace_hash.setter
-    def workspace_hash(self, value):
-        self._workspace_hash = value
-
-    @property
-    def style(self):
-        return dict(multiline=self.style_multiline,
-            max_columns=self.style_max_columns,
-            indent_with_tabs=self.style_indent_with_tabs)
-
     def notify_progress(self, text):
         self._success_response(progress=text)
 
@@ -90,12 +91,12 @@ class Extension(object):
         self.paths = kwargs.get('paths', [])
         self.skip_tests = kwargs.get('skipTest', True)
         self.temp_path = kwargs.get('tempPath')
+        self.workspace_path = kwargs.get('workspacePath')
 
         style_settings = kwargs.get('style', {})
-        self.style_multiline = style_settings.get('multiline', 'backslash')
-        self.style_max_columns = style_settings.get('maxColumns', 79)
-        self.style_indent_with_tabs = \
-            style_settings.get('indentWithTabs', False)
+        self.style_multiline = style_settings.get('multiline')
+        self.style_max_columns = style_settings.get('maxColumns')
+        self.style_indent_with_tabs = style_settings.get('indentWithTabs')
 
         if not self.paths:
             raise ValueError('Empty paths')
@@ -132,11 +133,13 @@ class Extension(object):
         else:
             # Settings were changed on-fly
             old_temp_path = self.temp_path
+            old_workspace_path = self.workspace_path
             old_paths = self.paths
             old_skip_tests = self.skip_tests
             self._apply_settings(**kwargs)
             
             if old_temp_path != self.temp_path or \
+                self.workspace_path != old_workspace_path or \
                 self.paths != old_paths or \
                 self.skip_tests != old_skip_tests:
                 self._cmd_rebuild_index()
@@ -224,23 +227,29 @@ class Extension(object):
         source_file = kwargs.get('sourceFile')
         module = kwargs.get('module')
         symbol = kwargs.get('symbol')  # Always present
-
         if not source_file:
             raise ValueError('Empty sourceFile')
-        
-        with open(source_file, 'r') as fd:
-            python_source = fd.read()
-        
-        # TODO: May be broken when starts with -OO
-        imports = importmagic.Imports(self._index_manager, python_source)
-        imports.set_style(**self.style)
 
+        isort = ExtendedSortImports(source_file, self.workspace_path)
         if not module:
-            imports.add_import(symbol)
+            isort.add_import(symbol)
         else:
-            imports.add_import_from(module, symbol)
-        start, end, text = imports.get_update()
-        return dict(fromLine=start, endLine=end, text=text)
+            isort.add_import(module, symbol)
+
+        params = {'verbose': False}
+        if self.style_max_columns is not None:
+            params['line_length'] = self.style_max_columns
+        if self.style_multiline == 'backslash':
+            params['use_parentheses'] = False
+            params['multi_line_output'] = WrapModes.HANGING_INDENT
+        if self.style_multiline == 'parentheses':
+            params['use_parentheses'] = True
+            params['multi_line_output'] = WrapModes.GRID
+        if self.style_indent_with_tabs is not None:
+            params['indent'] = '\t' if self.style_indent_with_tabs else ' '*4
+
+        diff = isort.get_diff(**params)
+        return dict(diff=diff)
 
     def _cmd_import_suggestions(self, **kwargs):
         if not self._index_manager:
@@ -285,16 +294,6 @@ class Extension(object):
 
         return dict(items=results)
 
-        # candidates = []
-        # for score, module, variable in \
-        #     self._index.symbol_scores(unresolved_name):
-        #     candidates.append(dict(score=score, module=module,
-        #                            variable=variable))
-        #     if len(candidates) >= ITEMS_LIMIT:
-        #         break
-
-        # return dict(candidates=candidates)
-    
     _COMMANDS = {
         'configure': _cmd_configure,
         'changeFiles': _cmd_change_files,

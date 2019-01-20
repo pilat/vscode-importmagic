@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
-import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace, CancellationTokenSource} from 'vscode';
-import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol } from './importMagicProxy';
+import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace, CancellationTokenSource, WorkspaceEdit, Uri} from 'vscode';
+import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol, IDiffCommand, DiffAction } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
@@ -125,7 +125,8 @@ export class ImportMagicProvider {
             };
 
             const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
-            await this.updateSource(await importMagic.sendCommand(cmd));
+            const result: IResultImport = await importMagic.sendCommand(cmd);
+            await this.updateSource(document.uri, result);
         } catch (e) {
             window.showErrorMessage(`Importmagic: ${e.message}`);
         } finally {
@@ -149,21 +150,31 @@ export class ImportMagicProvider {
         // Do noting. Watcher will be initialized for document workspace
     }
 
-    private async updateSource(update: IResultImport) {
-        const activeEditor = window.activeTextEditor;
-        if (!activeEditor) {
-            return undefined;
-        }
+    private async updateSource(fileUri: Uri, result: IResultImport) {
+        const changes = new WorkspaceEdit();
 
-        // select from fromLine to endLine and paste text text
-        const start: Position = new Position(update.fromLine, 0);
-        const end: Position = new Position(update.endLine, 0);
+        result.commands.forEach(edit => {
+            const start: Position = new Position(edit.start, 0);
+            const end: Position = new Position(edit.end, 0);
+            const range: Range = new Range(start, end);
 
-        let range: Range = new Range(start, end);
-        range = activeEditor.document.validateRange(range);
-
-        return activeEditor.edit(builder => {
-            builder.replace(range, update.text);
+            switch (edit.action) {
+                case DiffAction.Replace:
+                    changes.replace(fileUri, range, edit.text);
+                    break;
+                case DiffAction.Insert:
+                    changes.insert(fileUri, start, edit.text);
+                    break;
+                case DiffAction.Delete:
+                    changes.delete(fileUri, range);
+                    break;
+                default:
+            }
         });
+
+        if (!changes || changes.entries().length === 0) {
+            return;
+        }
+        await workspace.applyEdit(changes);
     }
 }

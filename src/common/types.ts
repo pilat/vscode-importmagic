@@ -40,13 +40,16 @@ export class StdErrError extends Error {
     }
 }
 
+export interface IStyle {
+    multiline?: string;
+    maxColumns?: number;
+    indentWithTabs?: boolean;
+}
+
 export interface IExtensionSettings {
     pythonPath: string;
     extraPaths: string[];
-
-    multiline: string;
-    maxColumns: number;
-    indentWithTabs: boolean;
+    style: IStyle;
 }
 
 /**
