@@ -10,7 +10,7 @@ from whoosh import index
 from whoosh.qparser import QueryParser, plugins
 
 
-DB_VERSION = 3
+DB_VERSION = 4
 
 
 class IndexManager(object):

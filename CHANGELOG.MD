@@ -1,7 +1,10 @@
 Changelog
 =========
+### 0.1.2 - January 21, 2019
+- Some module could have __all__ list. Modules from there will be placed to indexing
+
 ### 0.1.1 - January 21, 2019 - hotfix
-- If project didn't have any import the first import wouldn't insert
+- If project didn't have any import, the first import wouldn't insert
 
 ### 0.1.0 - January 21, 2019
 - Import statements will be made using iSort. You can use .isort.cfg in your project

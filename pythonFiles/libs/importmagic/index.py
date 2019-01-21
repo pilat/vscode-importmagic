@@ -296,7 +296,7 @@ class SymbolIndex(object):
         return '.'.join(reversed(path))
 
     def set_explicit_exports(self):
-        self._exports = {}
+        self._exports = self._exports or {}  # It hasn't None yet
 
     def add_explicit_export(self, name, score):
         assert self._exports is not None, 'Initialized _exports variable expected'
@@ -348,9 +348,11 @@ class SymbolIndex(object):
                     alias._tree = tree._tree
         yield tree
         if tree._exports is not None:
-            # Delete unexported variables
+            # Delete unexported variables. But keeps submodules
             for key in set(tree._tree) - set(tree._exports):
-                del tree._tree[key]
+                value = tree._tree.get(key)
+                if value is None or type(value) is float:
+                    del tree._tree[key]
 
     def serialize(self, fd=None):
         if fd is None:
