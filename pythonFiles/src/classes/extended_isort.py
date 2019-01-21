@@ -26,6 +26,8 @@ class ExtendedSortImports(SortImports):
     def _parse(self):
         self._apply_imports()
         super(ExtendedSortImports, self)._parse()
+        if self.import_index == -1 and self._import_candidates:
+            self.import_index = 0
 
     def _show_diff(self, file_contents):
         s1 = file_contents.splitlines(1)
