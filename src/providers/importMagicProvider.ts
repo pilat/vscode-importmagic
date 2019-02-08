@@ -18,6 +18,11 @@ export class ImportMagicProvider {
             return [];
         }
 
+        const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
+        if (!importMagic) {
+            return [];
+        }
+
         const cmd: ICommandSuggestions<IResultSymbols> = {
             action: ActionType.Suggestions,
             sourceFile,
@@ -25,7 +30,6 @@ export class ImportMagicProvider {
         };
 
         try{
-            const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
             const result = await importMagic.sendCommand(cmd);
 
             return result.items.map(suggestion => {
@@ -113,6 +117,11 @@ export class ImportMagicProvider {
             return undefined;
         }
 
+        const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
+        if (!importMagic) {
+            return undefined;
+        }
+
         const tmpFileCreated = document.isDirty;
         const filePath = tmpFileCreated ? await getTempFileWithDocumentContents(document) : document.fileName;
 
@@ -124,7 +133,6 @@ export class ImportMagicProvider {
                 symbol
             };
 
-            const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
             const result: IResultImport = await importMagic.sendCommand(cmd);
             await this.updateSource(document.uri, result);
         } catch (e) {
@@ -142,6 +150,10 @@ export class ImportMagicProvider {
             return undefined;
         }
         const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
+        if (!importMagic) {
+            return undefined;
+        }
+
         await importMagic.renewIndex();
     }
 

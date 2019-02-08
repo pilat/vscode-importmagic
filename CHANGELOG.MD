@@ -1,5 +1,8 @@
 Changelog
 =========
+### 0.1.3 - Febrary 8, 2019
+- quick fix Multi-root workspaces supporting
+
 ### 0.1.2 - January 21, 2019
 - Some module could have __all__ list. Modules from there will be placed to indexing
 

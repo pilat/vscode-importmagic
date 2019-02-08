@@ -13,20 +13,16 @@ export class ImportMagicProxyFactory implements Disposable {
     public dispose() {
         this.disposables.forEach(disposable => disposable.dispose());
         this.disposables = [];
+        this.proxyHandlers.clear();
     }
 
-    public getImportMagicProxy(resource: Uri): ImportMagicProxy {
+    public getImportMagicProxy(resource: Uri): ImportMagicProxy|undefined {
         const workspaceFolder = workspace.getWorkspaceFolder(resource);
         let workspacePath = workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
         let workspaceName = workspaceFolder ? workspaceFolder.name : undefined;
         if (!workspacePath) {
-            if (Array.isArray(workspace.workspaceFolders) && workspace.workspaceFolders.length > 0) {
-                workspacePath = workspace.workspaceFolders[0].uri.fsPath;
-                workspaceName = workspace.workspaceFolders[0].name;
-            } else {
-                workspacePath = __dirname;
-                workspaceName = 'default';
-            }
+            // "a man has no name" (c)
+            return
         }
 
         let importMagic = this.proxyHandlers.get(workspacePath);

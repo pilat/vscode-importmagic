@@ -27,6 +27,9 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
         }
 
         const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
+        if (!importMagic) {
+            return undefined;
+        }
 
         const cmd: ICommandSymbols<IResultSymbols> = {
             action: ActionType.Symbols,

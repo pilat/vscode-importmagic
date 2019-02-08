@@ -14,5 +14,6 @@
     "typescript.tsdk": "./node_modules/typescript/lib", // we want to use the TS server from our node_modules folder to control its version
     "files.insertFinalNewline": true,
     "tslint.enable": true,
-    "python.linting.pylintEnabled": false
+    "python.linting.pylintEnabled": false,
+    "python.autoComplete.extraPaths": ["pythonFiles"]
 }
