@@ -1,0 +1,14 @@
+**/.DS_Store
+.vscode/**
+**/*.ts
+**/tsconfig.json
+**/tslint.json
+scripts/*
+.gitignore
+.gitmodules
+
+
+pythonFiles/libs/**
+!pythonFiles/libs/importmagic/importmagic/**/*
+!pythonFiles/libs/isort/isort/**/*
+!pythonFiles/libs/whoosh/src/**/*
