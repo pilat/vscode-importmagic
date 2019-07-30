@@ -1,5 +1,8 @@
 Changelog
 =========
+### 0.2.2 - July 30, 2019
+- dependencies were added as submodules
+
 ### 0.2.0 - July 30, 2019
 - isort was upgraded to 4.3.21 what means Python2 isn't support anymore
 
