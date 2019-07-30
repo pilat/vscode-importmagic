@@ -1,0 +1,2 @@
+class WarningException(Exception):
+    pass

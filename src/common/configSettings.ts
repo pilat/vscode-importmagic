@@ -81,9 +81,10 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
         this.pythonPath = systemVariables.resolveAny(pythonSettings.get<string>('pythonPath'))!;
         this.pythonPath = getAbsolutePath(this.pythonPath, workspaceRoot);
 
-        this.extraPaths = systemVariables.resolveAny(pythonSettings.get<string[]>('autoComplete.extraPaths'))!;
-        if (!Array.isArray(this.extraPaths)) {
-            this.extraPaths = [this.extraPaths];
+        let extraPaths:string[] = systemVariables.resolveAny(pythonSettings.get<string[]>('autoComplete.extraPaths'))!;
+        this.extraPaths = [];
+        for (let path of Array.isArray(extraPaths) ? extraPaths : [extraPaths]) {
+            this.extraPaths.push(getAbsolutePath(path, workspaceRoot))
         }
 
         this.multiline = pluginSettings.get('multiline');
@@ -133,9 +134,9 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
 function getAbsolutePath(pathToCheck: string, rootDir: string): string {
     pathToCheck = untildify(pathToCheck) as string;
     if (isTestExecution() && !pathToCheck) { return rootDir; }
-    if (pathToCheck.indexOf(path.sep) === -1) {
-        return pathToCheck;
-    }
+    // if (pathToCheck.indexOf(path.sep) === -1) {
+    //     return pathToCheck;
+    // }
     return path.isAbsolute(pathToCheck) ? pathToCheck : path.resolve(rootDir, pathToCheck);
 }
 
@@ -154,7 +155,7 @@ function getPythonExecutable(pythonPath: string): string {
     }
 
     // Keep python right on top, for backwards compatibility.
-    const KnownPythonExecutables = ['python', 'python4', 'python3.7', 'python3.6', 'python3.5', 'python3', 'python2.7', 'python2'];
+    const KnownPythonExecutables = ['python', 'python4', 'python3.8', 'python3.7', 'python3.6', 'python3.5', 'python3'];
 
     for (let executableName of KnownPythonExecutables) {
         // Suffix with 'python' for linux and 'osx', and 'python.exe' for 'windows'.

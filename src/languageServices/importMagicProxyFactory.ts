@@ -1,9 +1,12 @@
 import { Disposable, Uri, workspace } from 'vscode';
 import { ImportMagicProxy } from '../providers/importMagicProxy';
+import { Progress } from './../common/progress';
+
 
 export class ImportMagicProxyFactory implements Disposable {
     private disposables: Disposable[];
     private proxyHandlers: Map<string, ImportMagicProxy>;
+    private progress: Progress = new Progress();
 
     constructor(private extensionRootPath: string, private storagePath: string) {
         this.disposables = [];
@@ -21,13 +24,14 @@ export class ImportMagicProxyFactory implements Disposable {
         let workspacePath = workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
         let workspaceName = workspaceFolder ? workspaceFolder.name : undefined;
         if (!workspacePath) {
-            // "a man has no name" (c)
             return
         }
 
         let importMagic = this.proxyHandlers.get(workspacePath);
         if (!importMagic) {
-            importMagic = new ImportMagicProxy(this.extensionRootPath, workspacePath, this.storagePath, workspaceName);
+            importMagic = new ImportMagicProxy(
+                this.extensionRootPath, workspacePath, 
+                this.storagePath, workspaceName, this.progress);
             this.disposables.push(importMagic);
             this.proxyHandlers.set(workspacePath, importMagic);
         }

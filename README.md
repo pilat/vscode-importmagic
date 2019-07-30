@@ -7,16 +7,21 @@
   <br>
 </h1>
 
+
 [![Marketplace Version](https://vsmarketplacebadge.apphb.com/version/brainfit.vscode-importmagic.svg)](https://marketplace.visualstudio.com/items?itemName=brainfit.vscode-importmagic) 
 <!-- [![Build Status](https://travis-ci.org/pilat/vscode-importmagic.svg?branch=master)](https://travis-ci.org/pilat/vscode-importmagic) -->
 
 ## It helps to find unresolved imports
 
-This Visual Studio Code extension allows to find unresolved symbols in your Python code and helps to import them.
+This Visual Studio Code extension allows to find unresolved symbols in your Python projects and helps to import them.
+> ⚠️ Since version 0.2.0 it supports Python3 only!
+
+
+## Demo
 
 ![Demo](https://github.com/pilat/vscode-importmagic/blob/master/images/presentation.gif?raw=true)
 
-If you want force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
+If you want to force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd> (See [IntelliSense features](https://code.visualstudio.com/docs/editor/intellisense#_intellisense-features) for more information)
 
 
 ## Configuration
@@ -31,14 +36,15 @@ If you want force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd> (
 
 
 ## Install notes
-- This extension needs [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-- You must have installed python interpretor (see `"python.pythonPath"` in your project settings). Python 2.7 and 3.4+ are supported.
-- This extension will scan project root directory and the all directories which metioned in `"python.autoComplete.extraPaths"`.
+- You must have installed python interpretor (and `"python.pythonPath"` in your settings). Python versions 3.4 and above are supported.
+- This extension will scan project root directory and all directories from `"python.autoComplete.extraPaths"`.
 
 
-## Tips
-1. If you have problem with autocomplete make sure that `"python.autoComplete.extraPaths"` option contains the path with your source code.
-2. Symbols from some packages may be unavialable when this package contains the `__all__` variable.
+## Caveats
+1. It supports only Python3 interpreters.
+2. If you have problem with autocomplete make sure that `"python.autoComplete.extraPaths"` option contains the path with your source code.
+3. Symbols from some packages may be unavialable when package contains the `__all__` variable.
+4. Symbols may be unavialable when package doesn't have `__init__.py`
 
 
 ## Roadmap

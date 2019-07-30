@@ -1,34 +1,30 @@
 import * as vscode from 'vscode';
 
 export class Progress {
-    private semaphores = [];
+    private progress = null;
+    private cancellationFlag = null;
 
-    public setTitle(title: string) {
-        this._setTitle(title);
+    public setTitle(message: string) {
+        if (this.progress === null) {
+            vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'ImportMagic'}, (progress) => {
+                this.progress = progress;
+                this.progress.report({ message });
+
+                return new Promise((resolve) => {
+                    this.cancellationFlag = resolve;
+                });
+            });
+        } else {
+            this.progress.report({ message })
+        }
     }
 
     public hide() {
-        this.setTitle('');
-    }
-
-    private _setTitle(title: string) {
-        if (title) {
-            vscode.window.withProgress({location: vscode.ProgressLocation.Window, title}, async (progress) => {
-                await new Promise((resolve, reject) => {
-                    this.semaphores.push(resolve);
-                });
-                // this.semaphoreDeferred = null;
-            }).then(() => {
-                if (this.semaphores.length > 1) {
-                    const sem = this.semaphores.shift();
-                    sem();
-                }
-            });
-        } else {
-            while (this.semaphores.length > 0) {
-                const sem = this.semaphores.shift();
-                sem();
-            }
+        if (this.cancellationFlag !== null) {
+            this.cancellationFlag();
+            this.progress = null;
         }
     }
 }

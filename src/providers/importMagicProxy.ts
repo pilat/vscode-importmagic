@@ -1,5 +1,4 @@
 import { FileSystemWatcher } from './../common/fsWatcher';
-import { Progress } from './../common/progress';
 import { ExtensionSettings } from './../common/configSettings';
 import { ProcessService } from './../common/proc';
 import { ICommandResult } from './importMagicProxy';
@@ -9,6 +8,8 @@ import * as vscode from 'vscode';
 import { ChildProcess } from 'child_process';
 import { createDeferred, Deferred } from '../common/helpers';
 import { isTestExecution } from '../common/utils';
+import { Progress } from './../common/progress';
+
 
 export enum DiffAction {
     Delete = 'delete',
@@ -44,7 +45,7 @@ interface IResultChangeFiles extends ICommandResult {
     success: boolean;
 }
 
-interface IResultRenew extends ICommandResult {
+export interface IResultRenew extends ICommandResult {
     success: boolean;
 }
 
@@ -89,7 +90,7 @@ interface ICommandChangeFiles<T extends ICommandResult> extends ICommand<T> {
     files: string[];
 }
 
-interface ICommandRenew<T extends ICommandResult> extends ICommand<T> { }
+export interface ICommandRenew<T extends ICommandResult> extends ICommand<T> { }
 
 export interface ICommandSuggestions<T extends ICommandResult> extends ICommand<T> {
     sourceFile: string;
@@ -113,15 +114,17 @@ export class ImportMagicProxy {
     private proc: ChildProcess;
     private previousData = '';
 
-    private languageServerStarted: Deferred<void>;
+    private processDeferred: Deferred<void>;
     private commands = new Map<number, ICommand<ICommandResult>>();
     private commandId: number = 0;
     private restartAttempts: number = 0;
-    private progress: Progress = new Progress();
+    private stopReason: string = '';  // Bad startup configuration reason
+    
     private fsWatcher: FileSystemWatcher;
 
     constructor(private extensionRootDir: string, private workspacePath: string,
-            private storagePath: string, private workspaceName: string) {
+            private storagePath: string, private workspaceName: string,
+            private progress: Progress) {
         this.settings = ExtensionSettings.getInstance(vscode.Uri.file(this.workspacePath));
         this.settings.on('change', this.onChangeSettings.bind(this));
 
@@ -138,7 +141,10 @@ export class ImportMagicProxy {
     }
 
     public async sendCommand<T extends ICommandResult>(cmd: ICommand<T>): Promise<T> {
-        await this.languageServerStarted.promise;
+        await this.processDeferred.promise;
+        if (this.stopReason) {
+            throw new Error(`Extenstion is not ready: ${this.stopReason}`)
+        }
 
         // Await commands from queue
         while (this.commands.size > 0) {
@@ -152,30 +158,25 @@ export class ImportMagicProxy {
         return this.sendRequest(cmd);
     }
 
-    // public isBusy() {
-    //     return this.commands.size > 0;
-    // }
-
-    public async renewIndex() {
-        const cmd: ICommandRenew<IResultRenew> = {
-            action: ActionType.Renew
-        };
-
-        await this.sendRequest(cmd);
-    }
-
     public async configure() {
         const isTest = isTestExecution();
         const cmd: ICommandConfigure<IResultConfigure> = {
             action: ActionType.Configure,
-            paths: this.getExtraPaths(),
+            paths: this.settings.extraPaths,
             workspacePath: this.workspacePath,
             skipTest: !isTest,
             tempPath: this.storagePath,
             workspaceName: this.workspaceName,
             style: this.settings.style
         };
-        await this.sendRequest(cmd);
+
+        // If configure was with error, then we will stop language server
+        try {
+            const result = await this.sendRequest(cmd);
+        } catch (e) {
+            this.stopReason = e.message;
+            vscode.window.showErrorMessage(`Importmagic: ${this.stopReason}`);
+        }
     }
 
     private onChangeProjectFiles(files: Set<string>) {
@@ -187,11 +188,14 @@ export class ImportMagicProxy {
     }
 
     private onChangeSettings() {
-        this.configure();
+        // Restart language server because python path could be changed
+        this.restartAttempts = 0;
+        this.stopReason = '';
+        this.restartServer();
     }
 
     private restartServer() {
-        this.languageServerStarted = createDeferred<void>();
+        this.processDeferred = createDeferred<void>();
         this.killProcess();
         this.clearPendingRequests();
         this.spawnProcess();
@@ -203,18 +207,24 @@ export class ImportMagicProxy {
         const pythonProcess = new ProcessService();
 
         const pythonPath = this.settings.pythonPath;
-        const args = ['importMagic.py', '-d'];
+        const args = ['importMagic.py'];
         const result = pythonProcess.execObservable(pythonPath, args, { cwd });
         this.proc = result.proc;
 
         if (!result.proc.pid) {
-            this.languageServerStarted.reject({message: 'Importmagic: Python interpreter is not found'});
-            vscode.window.showErrorMessage('Importmagic: Python interpreter is not found');
+            this.processDeferred.reject();
+            this.stopReason = 'Python interpreter is not found';
+            vscode.window.showErrorMessage(`Importmagic: ${this.stopReason}`);
             return false;
         }
 
-        result.proc.on('end', (end) => {
+        result.proc.on('close', (end) => {
             logger.error('spawnProcess.end', `End - ${end}`);
+            // this.proc = null;
+            if (end === 101) {
+                this.stopReason = 'Python3 is required'
+                vscode.window.showErrorMessage(`Importmagic: ${this.stopReason}`);
+            }
         });
         result.proc.on('error', error => {
             logger.error('Error', `${error}`);
@@ -231,7 +241,7 @@ export class ImportMagicProxy {
         });
 
         await this.configure();
-        this.languageServerStarted.resolve();
+        this.processDeferred.resolve();
     }
 
     private killProcess() {
@@ -242,21 +252,6 @@ export class ImportMagicProxy {
         // tslint:disable-next-line:no-empty
         } catch { }
         this.proc = null;
-    }
-
-    private getExtraPaths(): string[] {
-        // Add support for paths relative to workspace.
-        const paths = this.settings.extraPaths.map(extraPath => {
-            if (path.isAbsolute(extraPath)) {
-                return extraPath;
-            }
-            if (typeof this.workspacePath !== 'string') {
-                return '';
-            }
-            return path.join(this.workspacePath, extraPath);
-        });
-        paths.push(this.workspacePath);
-        return paths;
     }
 
     private sendRequest<T extends ICommandResult>(cmd: ICommand<T>): Promise<T> {
@@ -276,6 +271,7 @@ export class ImportMagicProxy {
                 throw new Error('ImportMagic process is die');
             }
 
+            // logger.debug(`-> ${JSON.stringify(extendedPayload)}`);
             this.proc.stdin.write(`${JSON.stringify(extendedPayload)}\n`);
             this.commands.set(this.commandId, executionCmd);
         }catch (ex) {
@@ -299,21 +295,30 @@ export class ImportMagicProxy {
 
     private onData(dataStr: string) {
         try{
+            // if (dataStr) {
+            //     logger.debug(`<- ${dataStr}`);
+            // }
             const response = JSON.parse(dataStr);
             const responseId = ImportMagicProxy.getProperty<number>(response, 'id');
             const progressMessage = ImportMagicProxy.getProperty<string>(response, 'progress');
+            const isError: boolean = !!response.error;
 
             if (progressMessage) {
                 // Only set progress
                 this.progress.setTitle(progressMessage);
                 return;
             } else {
-                // Hide progress and parse answer
+                // Hide progress and parse the answer
                 this.progress.hide();
             }
 
-            if (!responseId) {
-                logger.error('ImportMagicProxy', 'Response not contain id');
+            // Somethimes error may happened just after startup
+            if (isError) {
+                logger.error('ImportMagicProxy', `Error from process: ${response.message}`);
+            }
+
+            if (responseId === undefined) {
+                logger.error('ImportMagicProxy', 'Response is not contain id');
                 return;
             }
 
@@ -323,11 +328,6 @@ export class ImportMagicProxy {
             }
             this.commands.delete(responseId);
 
-            if (response.error) {
-                logger.error('ImportMagicProxy', `Error from process: ${response.message}`);
-            }
-
-            const isError: boolean = response.error ? true : false;
             const handler = isError ? this.onError : this.getCommandHandler(cmd.action);
             if (!handler) {
                 return;

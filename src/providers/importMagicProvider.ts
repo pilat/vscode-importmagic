@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
 import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace, CancellationTokenSource, WorkspaceEdit, Uri} from 'vscode';
-import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol, IDiffCommand, DiffAction } from './importMagicProxy';
+import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol, IDiffCommand, DiffAction, ICommandRenew, IResultRenew } from './importMagicProxy';
 import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
@@ -86,8 +86,10 @@ export class ImportMagicProvider {
 
             const suggestions = this.getImportSuggestions(filePath, unresolvedName);
             suggestions.then((results: ImportPathQuickPickItem[]) => {
-                if (results === undefined || results.length === 0) {
+                if (results.length === 0) {
                     window.showWarningMessage('Importmagic: Nothing to import');
+                }
+                if (results.length === 0 || results === undefined) {
                     cToken.cancel();
                 }
             });
@@ -154,7 +156,11 @@ export class ImportMagicProvider {
             return undefined;
         }
 
-        await importMagic.renewIndex();
+        const cmd: ICommandRenew<IResultRenew> = {
+            action: ActionType.Renew
+        };
+
+        await importMagic.sendCommand(cmd);
     }
 
     public openDocument(doc) {

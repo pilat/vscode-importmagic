@@ -1,5 +1,11 @@
 Changelog
 =========
+### 0.2.0 - July 30, 2019
+- isort was upgraded to 4.3.21 what means Python2 isn't support anymore
+
+### 0.1.4 - July 10, 2019
+- Show progress as a notification
+
 ### 0.1.3 - Febrary 8, 2019
 - quick fix Multi-root workspaces supporting
 
