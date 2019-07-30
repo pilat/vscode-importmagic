@@ -1,0 +1,6 @@
+[submodule "pythonFiles/libs/whoosh"]
+	path = pythonFiles/libs/whoosh
+	url = https://github.com/mchaput/whoosh
+[submodule "pythonFiles/libs/isort"]
+	path = pythonFiles/libs/isort
+	url = https://github.com/timothycrosley/isort
