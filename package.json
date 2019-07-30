@@ -90,7 +90,7 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "./scripts/prepublish.sh",
         "compile": "tsc -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "watch": "tsc -watch -p ./"

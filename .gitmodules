@@ -4,3 +4,6 @@
 [submodule "pythonFiles/libs/isort"]
 	path = pythonFiles/libs/isort
 	url = https://github.com/timothycrosley/isort
+[submodule "pythonFiles/libs/importmagic"]
+	path = pythonFiles/libs/importmagic
+	url = https://github.com/pilat/importmagic

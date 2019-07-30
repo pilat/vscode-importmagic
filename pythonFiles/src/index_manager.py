@@ -3,7 +3,6 @@ from os import mkdir
 import time
 import sys
 
-from src.utils import to_unicode
 from src.schema import IndexSchema
 from src.indexer import QuickIndexer
 from src.utils import md5_hash
@@ -76,9 +75,9 @@ class IndexManager(object):
     def _add_document(self, filename, symbol, module, location, kind, 
                       score, **kwargs):
         self._writer.add_document(
-            filename=to_unicode(filename),
-            symbol=to_unicode(symbol),
-            module=to_unicode(module),
+            filename=filename,
+            symbol=symbol,
+            module=module,
             location=location,
             kind=kind,
             sort=score)
