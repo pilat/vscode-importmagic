@@ -1,14 +1,12 @@
-from os import path # import exists, join
-from os import mkdir
-import time
 import sys
+import time
+from os import makedirs, path
 
-from src.schema import IndexSchema
 from src.indexer import QuickIndexer
+from src.schema import IndexSchema
 from src.utils import md5_hash
 from whoosh import index
 from whoosh.qparser import QueryParser, plugins
-
 
 DB_VERSION = 5
 
@@ -24,8 +22,10 @@ class IndexManager(object):
 
         # Create target temp path
         data_path = self._get_path()
-        if not path.exists(data_path):
-            mkdir(data_path)
+        try:
+            makedirs(data_path)
+        except OSError as e:
+            pass
 
     def _get_path(self):
         return path.join(self._extension.temp_path, self._workspace_hash_name)

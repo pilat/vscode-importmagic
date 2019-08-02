@@ -1,12 +1,12 @@
 import os
 import sys
+
 import importmagic
-from src.index_manager import IndexManager, DB_VERSION
-from src.indexer import DirIndexer, FileIndexer
-from src.extended_isort import ExtendedSortImports, \
-    SortImportsException
-from src import WarningException
 from isort.settings import WrapModes
+from src import WarningException
+from src.extended_isort import ExtendedSortImports
+from src.index_manager import IndexManager
+from src.indexer import DirIndexer, FileIndexer
 
 
 class Extension(object):

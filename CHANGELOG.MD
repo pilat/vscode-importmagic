@@ -1,5 +1,8 @@
 Changelog
 =========
+### 0.2.3 - August 2, 2019
+- Fix temporary directory creation
+
 ### 0.2.2 - July 30, 2019
 - dependencies were added as submodules
 
