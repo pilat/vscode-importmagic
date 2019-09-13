@@ -1,5 +1,8 @@
 Changelog
 =========
+### 0.2.4 - September 13, 2019
+- Fix path scanning for projects without `extraPaths` setting
+
 ### 0.2.3 - August 2, 2019
 - Fix temporary directory creation
 

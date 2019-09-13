@@ -111,9 +111,12 @@ class Extension(object):
         # We will scan all project folders when user is not define paths:
         if not self.paths and os.path.exists(self.workspace_path):
             for filename in os.listdir(self.workspace_path):
-                if not os.path.isdir(filename):
-                    continue
-                self.paths.append(os.path.join(self.workspace_path, filename))
+                file_path = os.path.join(self.workspace_path, filename)
+                try:
+                    if os.path.isdir(file_path):
+                        self.paths.append(file_path)
+                except Exception:
+                    pass
 
         self._inited = True
         self.notify_progress('Index checking in progress...')
