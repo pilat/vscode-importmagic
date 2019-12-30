@@ -20,6 +20,7 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
     private multiline: string = null;
     private maxColumns: number = null;
     private indentWithTabs: boolean = null;
+    public skipTestFolders: boolean = true;
 
     private workspaceRoot: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
@@ -90,6 +91,7 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
         this.multiline = pluginSettings.get('multiline');
         this.maxColumns = pluginSettings.get('maxColumns');
         this.indentWithTabs = pluginSettings.get('indentWithTabs');
+        this.skipTestFolders = pluginSettings.get('skipTestFolders');
 
         if (!this.maxColumns) {
             const rulers = editorSettings.get<number[]>('rulers', []);
@@ -134,9 +136,6 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
 function getAbsolutePath(pathToCheck: string, rootDir: string): string {
     pathToCheck = untildify(pathToCheck) as string;
     if (isTestExecution() && !pathToCheck) { return rootDir; }
-    // if (pathToCheck.indexOf(path.sep) === -1) {
-    //     return pathToCheck;
-    // }
     return path.isAbsolute(pathToCheck) ? pathToCheck : path.resolve(rootDir, pathToCheck);
 }
 

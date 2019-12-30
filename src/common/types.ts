@@ -50,6 +50,7 @@ export interface IExtensionSettings {
     pythonPath: string;
     extraPaths: string[];
     style: IStyle;
+    skipTestFolders: boolean;
 }
 
 /**

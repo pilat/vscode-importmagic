@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { CompletionContext, commands, Disposable } from 'vscode';
 import { ImportMagicProxyFactory } from '../languageServices/importMagicProxyFactory';
 import { IResultSymbols, ActionType, ICommandSymbols, ISuggestionSymbol } from './importMagicProxy';
-import { isTestExecution } from '../common/utils';
 
 export class ImportMagicCompletionItemProvider implements vscode.CompletionItemProvider {
     constructor(private importMagicFactory: ImportMagicProxyFactory) { }

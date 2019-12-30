@@ -1,28 +1,26 @@
-const PREFIX = 'Python Importmagic: ';
+import * as vscode from 'vscode';
 
 export class Logger {
-    public logError(message: string, ex?: Error) {
-        // tslint:disable-next-line:no-console
-        console.error(`${PREFIX}${message}`, error);
+    private readonly channel: vscode.OutputChannel;
+
+    constructor() {
+        this.channel = vscode.window.createOutputChannel('vscode-importmagic');
     }
-    public logWarning(message: string, ex?: Error) {
-        // tslint:disable-next-line:no-console
-        console.warn(`${PREFIX}${message}`, ex);
+
+    public dispose() {
+        this.channel.dispose();
     }
-    public logDebug(message: string) {
-        // tslint:disable-next-line:no-console
-        console.log(`${PREFIX}${message}`); //, ex);
+
+    public log(message: string) {
+        this.channel.appendLine(getTimestamp() + ' ' + message);
+    }
+
+    public logError(message: string) {
+        this.channel.appendLine(getTimestamp() + ' ERR: ' + message);
     }
 }
-// tslint:disable-next-line:no-any
-export function error(title: string = '', message: any) {
-    new Logger().logError(`${title}, ${message}`);
-}
-// tslint:disable-next-line:no-any
-export function warn(title: string = '', message: any) {
-    new Logger().logWarning(`${title}, ${message}`);
-}
-// tslint:disable-next-line:no-any
-export function debug(message: any) {
-    new Logger().logDebug(message);
+
+function getTimestamp() {
+    const date = new Date();
+    return '[' + date.toUTCString() + ']'
 }

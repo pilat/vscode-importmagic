@@ -46,17 +46,21 @@ class IndexManager(object):
         except:
             pass
 
+    def _make_index_hashsum(self, total_files):
+        return md5_hash('+'.join([
+            '+'.join(self._extension.paths),
+            str(self._extension.skip_tests),
+            sys.version,
+            str(DB_VERSION),
+            str(total_files)
+        ]))
+
     def open(self):
         # Quickly count files in project (include system files)
         idx = QuickIndexer(self._extension.paths, self._extension.skip_tests)
         idx.build()
 
-        db_checksum = md5_hash('%s+%s+%s+%s' % (
-             '+'.join(self._extension.paths),
-             sys.version,
-             DB_VERSION,
-             idx.total_files))
-        if self._read_checksum() != db_checksum:
+        if self._read_checksum() != self._make_index_hashsum(idx.total_files):
             return
 
         # Trying to open
@@ -137,25 +141,7 @@ class IndexManager(object):
         self._writer = None
 
         if total_files is not None:
-            db_checksum = md5_hash('%s+%s+%s+%s' % (
-                '+'.join(self._extension.paths),
-                sys.version,
-                DB_VERSION,
-                total_files))
-            self._write_checksum(db_checksum)
-
-
-    # def save_config(self, sys_modules_count):
-    #     # Let's write json
-    #     cfg = dict(python_version=sys.version, 
-    #                sys_modules_count=sys_modules_count,
-    #                db_version=DB_VERSION)
-    #     config_file_name = path.join(self._get_path(), 'config.json')
-    #     try:
-    #         with open(config_file_name, 'w') as f:
-    #             json.dump(cfg, f)
-    #     except:
-    #         return
+            self._write_checksum(self._make_index_hashsum(total_files))
 
     def search(self, pattern):
         qp = QueryParser('symbol', schema=self._ix.schema, plugins=[

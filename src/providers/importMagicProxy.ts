@@ -2,13 +2,12 @@ import { FileSystemWatcher } from './../common/fsWatcher';
 import { ExtensionSettings } from './../common/configSettings';
 import { ProcessService } from './../common/proc';
 import { ICommandResult } from './importMagicProxy';
-import * as logger from '../common/logger';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ChildProcess } from 'child_process';
 import { createDeferred, Deferred } from '../common/helpers';
-import { isTestExecution } from '../common/utils';
 import { Progress } from './../common/progress';
+import { Logger } from '../common/logger';
 
 
 export enum DiffAction {
@@ -124,7 +123,7 @@ export class ImportMagicProxy {
 
     constructor(private extensionRootDir: string, private workspacePath: string,
             private storagePath: string, private workspaceName: string,
-            private progress: Progress) {
+            private progress: Progress, private readonly logger: Logger) {
         this.settings = ExtensionSettings.getInstance(vscode.Uri.file(this.workspacePath));
         this.settings.on('change', this.onChangeSettings.bind(this));
 
@@ -159,12 +158,11 @@ export class ImportMagicProxy {
     }
 
     public async configure() {
-        const isTest = isTestExecution();
         const cmd: ICommandConfigure<IResultConfigure> = {
             action: ActionType.Configure,
             paths: this.settings.extraPaths,
             workspacePath: this.workspacePath,
-            skipTest: !isTest,
+            skipTest: this.settings.skipTestFolders,
             tempPath: this.storagePath,
             workspaceName: this.workspaceName,
             style: this.settings.style
@@ -219,7 +217,7 @@ export class ImportMagicProxy {
         }
 
         result.proc.on('close', (end) => {
-            logger.error('spawnProcess.end', `End - ${end}`);
+            this.logger.log(`spawnProcess.end: ${end}`);
             // this.proc = null;
             if (end === 101) {
                 this.stopReason = 'Python3 is required'
@@ -227,7 +225,7 @@ export class ImportMagicProxy {
             }
         });
         result.proc.on('error', error => {
-            logger.error('Error', `${error}`);
+            this.logger.logError(error);
         });
         result.out.subscribe(output => {
             const data = output.out;
@@ -271,11 +269,11 @@ export class ImportMagicProxy {
                 throw new Error('ImportMagic process is die');
             }
 
-            // logger.debug(`-> ${JSON.stringify(extendedPayload)}`);
+            this.logger.log(`cmd -> ${JSON.stringify(extendedPayload)}`);
             this.proc.stdin.write(`${JSON.stringify(extendedPayload)}\n`);
             this.commands.set(this.commandId, executionCmd);
         }catch (ex) {
-            logger.error('ImportMagicProxy', `Error "${ex.message}"`);
+            this.logger.logError(ex.message);
             if (this.restartAttempts < 10) {
                 this.restartServer();
                 return Promise.reject('ImportMagic process will be restarted. Try run command again');
@@ -295,9 +293,9 @@ export class ImportMagicProxy {
 
     private onData(dataStr: string) {
         try{
-            // if (dataStr) {
-            //     logger.debug(`<- ${dataStr}`);
-            // }
+            if (dataStr) {
+                this.logger.log(`<- ${dataStr}`);
+            }
             const response = JSON.parse(dataStr);
             const responseId = ImportMagicProxy.getProperty<number>(response, 'id');
             const progressMessage = ImportMagicProxy.getProperty<string>(response, 'progress');
@@ -314,11 +312,11 @@ export class ImportMagicProxy {
 
             // Somethimes error may happened just after startup
             if (isError) {
-                logger.error('ImportMagicProxy', `Error from process: ${response.message}`);
+                this.logger.logError(response.message);
             }
 
             if (responseId === undefined) {
-                logger.error('ImportMagicProxy', 'Response is not contain id');
+                this.logger.logError('Response is not contain id');
                 return;
             }
 

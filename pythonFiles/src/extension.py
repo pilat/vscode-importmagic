@@ -22,8 +22,6 @@ class Extension(object):
         self._skip_tests = True
         self._temp_path = None
         self._index_manager = None
-        # self.workspace_hash = None
-        # self.db_checksum = None
 
     @property
     def style_multiline(self):
@@ -96,7 +94,7 @@ class Extension(object):
             raise Exception('Restart to reconfigure it')
 
         self.paths = kwargs.get('paths', [])
-        self.skip_tests = kwargs.get('skipTest', True)
+        self.skip_tests = bool(kwargs.get('skipTest', True))
         self.temp_path = kwargs.get('tempPath')
         self.workspace_path = kwargs.get('workspacePath')
 
@@ -172,15 +170,12 @@ class Extension(object):
 
         def report_listener2(value):
             v = value * 100 / total_items
-            self.notify_progress('Create index file... %i%%' % int(v))
+            self.notify_progress('Indexing... %i%%' % int(v))
 
         self._index_manager.append_index(idx, report_listener2)
         self.notify_progress('Save index file...')
         self._index_manager.commit(idx.total_files)
 
-        # Save system packages count
-        # self._index_manager.save_config(idx.total_system_files)
-        
         all_docs_count = self._index_manager.get_documents_count()
         return dict(success=True, docs_count=all_docs_count)
 

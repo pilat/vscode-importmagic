@@ -15,5 +15,6 @@
     "files.insertFinalNewline": true,
     "tslint.enable": true,
     "python.linting.pylintEnabled": false,
-    "python.autoComplete.extraPaths": ["pythonFiles"]
+    "python.autoComplete.extraPaths": ["./pythonFiles"],
+    "python.pythonPath": ".venv/bin/python"
 }

@@ -85,6 +85,12 @@
                     "default": null,
                     "description": "ImportMagic may using tabs when makes multiline indents",
                     "scope": "resource"
+                },
+                "importMagic.skipTestFolders": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Skip test folders on indexing",
+                    "scope": "resource"
                 }
             }
         }
