@@ -1,5 +1,10 @@
 Changelog
 =========
+### 0.2.5 - December 30, 2019
+- 'importMagic.skipTestFolders' configuration option was implemented
+- Behavior with not configured `extraPaths` was improved (again)
+
+=========
 ### 0.2.4 - September 13, 2019
 - Fix path scanning for projects without `extraPaths` setting
 
