@@ -205,7 +205,7 @@ export class ImportMagicProxy {
         const pythonProcess = new ProcessService();
 
         const pythonPath = this.settings.pythonPath;
-        const args = ['importMagic.py'];
+        const args = ['-W', 'ignore', 'importMagic.py'];  // Whoosh has brought us some warnings...
         const result = pythonProcess.execObservable(pythonPath, args, { cwd });
         this.proc = result.proc;
 
@@ -225,7 +225,7 @@ export class ImportMagicProxy {
             }
         });
         result.proc.on('error', error => {
-            this.logger.logError(error);
+            this.logger.logError(`${error}`);
         });
         result.out.subscribe(output => {
             const data = output.out;

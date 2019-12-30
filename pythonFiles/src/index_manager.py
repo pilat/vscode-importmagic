@@ -8,7 +8,7 @@ from src.utils import md5_hash
 from whoosh import index
 from whoosh.qparser import QueryParser, plugins
 
-DB_VERSION = 7
+DB_VERSION = 8
 
 
 class IndexManager(object):

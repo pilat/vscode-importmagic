@@ -6,6 +6,8 @@
 scripts/*
 .gitignore
 .gitmodules
+.venv
+.python-version
 
 
 pythonFiles/libs/**
