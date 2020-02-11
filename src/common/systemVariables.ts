@@ -1,5 +1,4 @@
 import * as Path from 'path';
-import * as Types from './sysTypes';
 import { IStringDictionary, ISystemVariables } from './types';
 /* tslint:disable:rule1 no-any no-unnecessary-callback-wrapper jsdoc-format no-for-in prefer-const no-increment-decrement */
 
@@ -12,11 +11,11 @@ export abstract class AbstractSystemVariables implements ISystemVariables {
     public resolve(value: IStringDictionary<IStringDictionary<string>>): IStringDictionary<IStringDictionary<string>>;
     // tslint:disable-next-line:no-any
     public resolve(value: any): any {
-        if (Types.isString(value)) {
+        if (typeof value === 'string') {
             return this.__resolveString(value);
-        } else if (Types.isArray(value)) {
+        } else if (Array.isArray(value)) {
             return this.__resolveArray(value);
-        } else if (Types.isObject(value)) {
+        } else if (typeof value === 'object' && value !== null) {
             return this.__resolveLiteral(value);
         }
 
@@ -26,11 +25,11 @@ export abstract class AbstractSystemVariables implements ISystemVariables {
     public resolveAny<T>(value: T): T;
     // tslint:disable-next-line:no-any
     public resolveAny(value: any): any {
-        if (Types.isString(value)) {
+        if (typeof value === 'string') {
             return this.__resolveString(value);
-        } else if (Types.isArray(value)) {
+        } else if (Array.isArray(value)) {
             return this.__resolveAnyArray(value);
-        } else if (Types.isObject(value)) {
+        } else if (typeof value === 'object' && value !== null) {
             return this.__resolveAnyLiteral(value);
         }
 
@@ -42,7 +41,7 @@ export abstract class AbstractSystemVariables implements ISystemVariables {
         return value.replace(regexp, (match: string, name: string) => {
             // tslint:disable-next-line:no-any
             const newValue = (<any>this)[name];
-            if (Types.isString(newValue)) {
+            if (typeof newValue === 'string') {
                 return newValue;
             } else {
                 return match && (match.indexOf('env.') > 0 || match.indexOf('env:') > 0) ? '' : match;

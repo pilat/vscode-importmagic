@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { CompletionContext, commands, Disposable } from 'vscode';
-import { ImportMagicProxyFactory } from '../languageServices/importMagicProxyFactory';
-import { IResultSymbols, ActionType, ICommandSymbols, ISuggestionSymbol } from './importMagicProxy';
+import { ImportMagicFactory } from '../importMagicFactory';
+import { IResultSymbols, ActionType, ICommandSymbols, ISuggestionSymbol } from '../importMagic';
 
-export class ImportMagicCompletionItemProvider implements vscode.CompletionItemProvider {
-    constructor(private importMagicFactory: ImportMagicProxyFactory) { }
+
+export class CompletionProvider implements vscode.CompletionItemProvider {
+    constructor(private importMagicFactory: ImportMagicFactory) { }
 
     public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken,
         context: CompletionContext): Promise<vscode.CompletionItem[]> {
@@ -25,7 +26,7 @@ export class ImportMagicCompletionItemProvider implements vscode.CompletionItemP
             return undefined;
         }
 
-        const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
+        const importMagic = this.importMagicFactory.getImportMagic(document.uri);
         if (!importMagic) {
             return undefined;
         }

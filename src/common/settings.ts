@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { ConfigurationTarget, Uri } from 'vscode';
 
 import { SystemVariables } from './systemVariables';
-import { IExtensionSettings, IStyle } from './types';
+import { ISettings, IStyle } from './types';
 import { isTestExecution } from './utils';
 
 import * as child_process from 'child_process';
@@ -13,9 +13,7 @@ import * as untildify from 'untildify';
 
 export const IS_WINDOWS = /^win/.test(process.platform);
 
-export class ExtensionSettings extends EventEmitter implements IExtensionSettings {  // Rename it to "Settings"
-    private static instances: Map<string, ExtensionSettings> = new Map<string, ExtensionSettings>();
-
+export class Settings implements ISettings, vscode.Disposable {
     public extraPaths: string[] = [];
     private multiline: string = null;
     private maxColumns: number = null;
@@ -24,47 +22,21 @@ export class ExtensionSettings extends EventEmitter implements IExtensionSetting
 
     private workspaceRoot: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
-
+    private workspace: vscode.WorkspaceFolder;
     private _pythonPath: string;
-    constructor(workspaceFolder?: Uri) {
-        super();
-        this.workspaceRoot = workspaceFolder ? workspaceFolder : vscode.Uri.file(__dirname);
+
+    constructor(workspacePath: string, listener) {
+        this.workspaceRoot = vscode.Uri.file(workspacePath)
+        if (!this.workspaceRoot && Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
+            this.workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
+        }
+
         this.disposables.push(vscode.workspace.onDidChangeConfiguration(() => {
             this.initializeSettings();
-            this.emit('change');
+            listener()
         }));
 
         this.initializeSettings();
-    }
-
-    public static getInstance(resource?: Uri): ExtensionSettings {
-        const workspaceFolderUri = ExtensionSettings.getSettingsUri(resource);
-        const workspaceFolderKey = workspaceFolderUri ? workspaceFolderUri.fsPath : '';
-
-        if (!ExtensionSettings.instances.has(workspaceFolderKey)) {
-            const settings = new ExtensionSettings(workspaceFolderUri);
-            ExtensionSettings.instances.set(workspaceFolderKey, settings);
-        }
-        return ExtensionSettings.instances.get(workspaceFolderKey)!;
-    }
-
-    public static getSettingsUri(resource?: Uri): Uri | undefined {
-        const workspaceFolder = resource ? vscode.workspace.getWorkspaceFolder(resource) : undefined;
-        let workspaceFolderUri: Uri | undefined = workspaceFolder ? workspaceFolder.uri : undefined;
-
-        if (!workspaceFolderUri && Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
-            workspaceFolderUri = vscode.workspace.workspaceFolders[0].uri;
-        }
-
-        return workspaceFolderUri;
-    }
-
-    public static dispose() {
-        if (!isTestExecution()) {
-            throw new Error('Dispose can only be called from unit tests');
-        }
-        ExtensionSettings.instances.forEach(item => item.dispose());
-        ExtensionSettings.instances.clear();
     }
 
     public dispose() {
@@ -154,7 +126,7 @@ function getPythonExecutable(pythonPath: string): string {
     }
 
     // Keep python right on top, for backwards compatibility.
-    const KnownPythonExecutables = ['python', 'python4', 'python3.8', 'python3.7', 'python3.6', 'python3.5', 'python3'];
+    const KnownPythonExecutables = ['python', 'python4', 'python3.9', 'python3.8', 'python3.7', 'python3.6', 'python3.5', 'python3'];
 
     for (let executableName of KnownPythonExecutables) {
         // Suffix with 'python' for linux and 'osx', and 'python.exe' for 'windows'.

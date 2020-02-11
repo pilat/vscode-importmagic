@@ -1,16 +1,34 @@
 import * as fs from 'fs-extra';
 import {commands, Disposable, Position, QuickPickItem, QuickPickOptions, Range, TextDocument, window, workspace, CancellationTokenSource, WorkspaceEdit, Uri} from 'vscode';
-import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol, IDiffCommand, DiffAction, ICommandRenew, IResultRenew } from './importMagicProxy';
-import { ImportMagicProxyFactory } from './../languageServices/importMagicProxyFactory';
+import { ActionType, ICommandSuggestions, ICommandImport, IResultImport, IResultSymbols, ISuggestionSymbol, IDiffCommand, DiffAction, ICommandRenew, IResultRenew } from '../importMagic';
+import { ImportMagicFactory } from '../importMagicFactory';
 import { getTempFileWithDocumentContents, isTestExecution } from '../common/utils';
 
-export interface ImportPathQuickPickItem extends QuickPickItem {
+
+interface ImportPathQuickPickItem extends QuickPickItem {
     module: string;
     symbol: string;
 }
 
-export class ImportMagicProvider {
-    constructor(private importMagicFactory: ImportMagicProxyFactory) { }
+export class ContextProvider implements Disposable {
+    private disposables: Disposable[] = [];
+
+    constructor(private importMagicFactory: ImportMagicFactory) {
+        this.disposables.push(workspace.onDidOpenTextDocument(this.openDocument.bind(this)));
+        this.disposables.push(commands.registerCommand('importMagic.resolveImport', this.resolveImport.bind(this)));
+        this.disposables.push(commands.registerCommand('importMagic.insertImport', this.insertImport.bind(this)));
+        this.disposables.push(commands.registerCommand('importMagic.rebuildIndex', this.rebuildIndex.bind(this)));
+
+        // For opened documents init proxy
+        for (const doc of workspace.textDocuments) {
+            this.openDocument(doc);
+        }
+    }
+
+    public dispose() {
+        this.disposables.forEach(disposable => disposable.dispose());
+        this.disposables = [];
+    }
 
     public async getImportSuggestions(sourceFile: string, unresolvedName: string): Promise<ImportPathQuickPickItem[]> {
         const activeEditor = window.activeTextEditor;
@@ -18,7 +36,7 @@ export class ImportMagicProvider {
             return [];
         }
 
-        const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
+        const importMagic = this.importMagicFactory.getImportMagic(activeEditor.document.uri);
         if (!importMagic) {
             return [];
         }
@@ -119,7 +137,7 @@ export class ImportMagicProvider {
             return undefined;
         }
 
-        const importMagic = this.importMagicFactory.getImportMagicProxy(document.uri);
+        const importMagic = this.importMagicFactory.getImportMagic(document.uri);
         if (!importMagic) {
             return undefined;
         }
@@ -151,7 +169,7 @@ export class ImportMagicProvider {
         if (!activeEditor) {
             return undefined;
         }
-        const importMagic = this.importMagicFactory.getImportMagicProxy(activeEditor.document.uri);
+        const importMagic = this.importMagicFactory.getImportMagic(activeEditor.document.uri);
         if (!importMagic) {
             return undefined;
         }
@@ -164,7 +182,7 @@ export class ImportMagicProvider {
     }
 
     public openDocument(doc) {
-        this.importMagicFactory.getImportMagicProxy(doc.uri);
+        this.importMagicFactory.getImportMagic(doc.uri);
         // Do noting. Watcher will be initialized for document workspace
     }
 

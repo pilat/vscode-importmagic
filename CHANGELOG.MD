@@ -1,11 +1,14 @@
 Changelog
 =========
+### 0.2.6 - Febrary 11, 2020
+- Fix issue with watching files in multiple workspace
+- Refactoring
+
 ### 0.2.5 - December 30, 2019
 - 'importMagic.skipTestFolders' configuration option was implemented
 - Behavior with not configured `extraPaths` was improved (again)
 - Whoosh was upgraded to 2.7.4
 
-=========
 ### 0.2.4 - September 13, 2019
 - Fix path scanning for projects without `extraPaths` setting
 

@@ -46,7 +46,7 @@ export interface IStyle {
     indentWithTabs?: boolean;
 }
 
-export interface IExtensionSettings {
+export interface ISettings {
     pythonPath: string;
     extraPaths: string[];
     style: IStyle;
