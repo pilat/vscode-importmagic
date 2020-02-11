@@ -41,7 +41,7 @@ export class ImportMagicProvider {
                 };
             });
         } catch (e) {
-            window.showErrorMessage(`Importmagic: ${e.message}`);
+            window.showErrorMessage(`${e.message}`);
             return undefined;
         }
     }
@@ -55,7 +55,7 @@ export class ImportMagicProvider {
         const document = activeEditor.document;
 
         if (!activeEditor || document.languageId !== 'python') {
-            window.showErrorMessage('Importmagic: Please, open a Python source file to show import suggestions');
+            window.showErrorMessage('Please, open a Python source file to show import suggestions');
             return undefined;
         }
 
@@ -63,13 +63,13 @@ export class ImportMagicProvider {
         const position: Position = activeEditor.selection.start;
         const range = document.getWordRangeAtPosition(position);
         if (!range || range.isEmpty) {
-            window.showErrorMessage('Importmagic: Empty resolve expression');
+            window.showErrorMessage('Empty resolve expression');
             return undefined;
         }
         const unresolvedName : string = document.getText(range);
 
         if (!unresolvedName || unresolvedName.length < 2) {
-            window.showErrorMessage('Importmagic: Empty or very short expression for resolve');
+            window.showErrorMessage('Empty or very short expression for resolve');
             return undefined;
         }
 
@@ -115,7 +115,7 @@ export class ImportMagicProvider {
         const document = activeEditor.document;
 
         if (!activeEditor || document.languageId !== 'python') {
-            window.showErrorMessage('Importmagic: Please, open a Python source file to show import suggestions');
+            window.showErrorMessage('Please, open a Python source file to show import suggestions');
             return undefined;
         }
 
@@ -138,7 +138,7 @@ export class ImportMagicProvider {
             const result: IResultImport = await importMagic.sendCommand(cmd);
             await this.updateSource(document.uri, result);
         } catch (e) {
-            window.showErrorMessage(`Importmagic: ${e.message}`);
+            window.showErrorMessage(`${e.message}`);
         } finally {
             if (tmpFileCreated) {
                 fs.unlinkSync(filePath);

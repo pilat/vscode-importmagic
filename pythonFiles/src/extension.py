@@ -153,6 +153,7 @@ class Extension(object):
 
         if not self._inited:
             raise Exception('Run configure() at first')
+        self.notify_progress('Rebuild index...')
         
         self._index_manager.recreate_index()
         

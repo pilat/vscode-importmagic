@@ -5,7 +5,7 @@ export class FileSystemWatcher {
     private changedFiles: Set<string> = new Set();
     private timeout: NodeJS.Timer = null;
 
-    constructor(private languageId: string, private listener) {
+    constructor(private workspaceName: string, private languageId: string, private listener) {
         // createFileSystemWatcher has problems with Windows 7, so
         vscode.workspace.onDidSaveTextDocument(this.onChangeProjectFile.bind(this));
     }
@@ -13,6 +13,12 @@ export class FileSystemWatcher {
     private onChangeProjectFile(doc: vscode.TextDocument) {
         if (doc.languageId !== this.languageId) {
             return;
+        }
+
+        // Filter by workspace
+        let docWorkspace = vscode.workspace.getWorkspaceFolder(doc.uri);
+        if (!docWorkspace || docWorkspace.name != this.workspaceName) {
+            return
         }
 
         this.changedFiles.add(doc.fileName);

@@ -11,12 +11,12 @@ export class Logger {
         this.channel.dispose();
     }
 
-    public log(message: string) {
-        this.channel.appendLine(getTimestamp() + ' ' + message);
+    public log(prefix: string, message: string) {
+        this.channel.appendLine(prefix + ' ' + getTimestamp() + ' ' + message);
     }
 
-    public logError(message: string) {
-        this.channel.appendLine(getTimestamp() + ' ERR: ' + message);
+    public logError(prefix: string, message: string) {
+        this.channel.appendLine(prefix + ' ' + getTimestamp() + ' ERR: ' + message);
     }
 }
 
