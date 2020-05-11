@@ -10,7 +10,7 @@
     },
     "license": "MIT",
     "engines": {
-        "vscode": "^1.33.0"
+        "vscode": "^1.45.0"
     },
     "categories": [
         "Other"
@@ -90,6 +90,12 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Skip test folders on indexing",
+                    "scope": "resource"
+                },
+                "importMagic.ignoreFolders": {
+                    "type": "array",
+                    "default": true,
+                    "description": "Folders to skip on indexing",
                     "scope": "resource"
                 }
             }

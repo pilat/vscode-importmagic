@@ -15,6 +15,7 @@ export const IS_WINDOWS = /^win/.test(process.platform);
 
 export class Settings implements ISettings, vscode.Disposable {
     public extraPaths: string[] = [];
+    public ignoreFolders: string[] = [];
     private multiline: string = null;
     private maxColumns: number = null;
     private indentWithTabs: boolean = null;
@@ -64,6 +65,7 @@ export class Settings implements ISettings, vscode.Disposable {
         this.maxColumns = pluginSettings.get('maxColumns');
         this.indentWithTabs = pluginSettings.get('indentWithTabs');
         this.skipTestFolders = pluginSettings.get('skipTestFolders');
+        this.ignoreFolders = pluginSettings.get('ignoreFolders');
 
         if (!this.maxColumns) {
             const rulers = editorSettings.get<number[]>('rulers', []);

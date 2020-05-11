@@ -1,7 +1,7 @@
 import os
 import locale
 
-from difflib import unified_diff, SequenceMatcher
+from difflib import SequenceMatcher
 
 # from pathlib import Path
 try:
@@ -12,9 +12,12 @@ except ImportError:
 
 from isort import settings
 from isort.isort import _SortImports
-from isort.compat import get_settings_path, resolve, \
-    determine_file_encoding, read_file_contents
-
+from isort.compat import (
+    get_settings_path,
+    resolve,
+    determine_file_encoding,
+    read_file_contents
+)
 
 class SortImportsException(Exception):
     pass
@@ -81,9 +84,11 @@ class ExtendedSortImports(object):
             return []
 
         extension = file_name.split('.')[-1] if file_name else "py"
-        self.sorted_imports = _SortImports(file_contents=file_contents,
-                                           config=self.config,
-                                           extension=extension)
+        self.sorted_imports = _SortImports(
+            file_contents=file_contents,
+            config=self.config,
+            extension=extension
+        )
         self.output = self.sorted_imports.output
 
         # END. compare file_contents vs self.output

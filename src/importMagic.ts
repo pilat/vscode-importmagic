@@ -77,6 +77,7 @@ export interface ICommand<T extends ICommandResult> {
 
 interface ICommandConfigure<T extends ICommandResult> extends ICommand<T> {
     paths: string[];
+    ignoreFolders: string[];
     workspacePath: string;
     skipTest: boolean;
     style: object;
@@ -166,6 +167,7 @@ export class ImportMagic implements vscode.Disposable {
             paths: this.settings.extraPaths,
             workspacePath: this.workspacePath,
             skipTest: this.settings.skipTestFolders,
+            ignoreFolders: this.settings.ignoreFolders,
             tempPath: this.storagePath,
             workspaceName: this.workspaceName,
             style: this.settings.style
