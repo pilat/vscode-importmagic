@@ -49,6 +49,7 @@ export interface IStyle {
 export interface ISettings {
     pythonPath: string;
     extraPaths: string[];
+    ignoreFolders: string[];
     style: IStyle;
     skipTestFolders: boolean;
 }

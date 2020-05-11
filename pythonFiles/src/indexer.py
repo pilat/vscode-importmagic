@@ -6,22 +6,31 @@ from src.symbol_index import ExtendedSymbolIndex
 
 
 class Indexer(object):  # Manager for ExtendedSymbolIndex
-    def __init__(self, paths, skip_tests=True):
+    def __init__(self, paths, skip_tests=True, ignore_folders=None):
         self.target_prefixes = None
         self.affected_files = set()  # Uses when target_prefixes was set
         self._last_report_time = 0
         self._report_listener = None
         self.total_files = 0
 
-        if skip_tests:
+        if ignore_folders is not None:
+            start_regex = (
+                r'\btest[s]?|test[s]?\b' if skip_tests else r''
+            )
+            folder_regex = [
+                r'\b' + folder + r'\b' for folder in ignore_folders
+            ]
+            regex = r"|".join([start_regex, *folder_regex])
+            self.blacklist_re = re.compile(regex)
+        elif skip_tests:
             self.blacklist_re = importmagic.index.DEFAULT_BLACKLIST_RE
         else:
             self.blacklist_re = re.compile(r'^$')
 
         self.paths = list(set(paths + sys.path))
         
-        # Remove this plugin pathes
         for s in list(self.paths):
+            # Remove this plugin paths
             if 'vscode-importmagic' in s or s == '':
                 self.paths.remove(s)
         
@@ -77,17 +86,17 @@ class Indexer(object):  # Manager for ExtendedSymbolIndex
 
 
 class DirIndexer(Indexer):
-    def __init__(self, paths, skip_tests=True):
-        super().__init__(paths, skip_tests)
+    def __init__(self, paths, skip_tests=True, ignore_folders=None):
+        super().__init__(paths, skip_tests, ignore_folders)
 
 
 class FileIndexer(Indexer):
-    def __init__(self, paths, prefixes, skip_tests=True):
-        super().__init__(paths, skip_tests)
+    def __init__(self, paths, prefixes, skip_tests=True, ignore_folders=None):
+        super().__init__(paths, skip_tests, ignore_folders)
         self.target_prefixes = prefixes
 
 
 class QuickIndexer(Indexer):
-    def __init__(self, paths, skip_tests=True):
-        super().__init__(paths, skip_tests)
+    def __init__(self, paths, skip_tests=True, ignore_folders=None):
+        super().__init__(paths, skip_tests, ignore_folders)
         self.target_prefixes = []

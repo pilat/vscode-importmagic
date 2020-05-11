@@ -34,6 +34,7 @@ If you want to force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd
 - `importMagic.multiline`: Imports can be aligned with `backlslash` or `parentheses`. By-default this option is undefined. Alignment will be applied with iSort defaults.
 - `importMagic.indentWithTabs`: Make tab indents instead four spaces. By-default this option undefined.
 - `importMagic.skipTestFolders`: Do not indexing test folders in your project. It's true by default.
+- `importMagic.ignoreFolders`: Do not indexing specific folders in your project.
 
 
 ## Install notes
@@ -56,6 +57,15 @@ If you want to force suggestions you can press <kbd>ctrl</kbd> + <kbd>space</kbd
 
 ## Contributing
 - I'll appreciate any merge request that will do this project better
+
+To get this extension build locally do:
+
+- git submodule init
+- git submodule update
+- npm install -g typescript vsce
+- vsce package
+
+Now install the build visx package in vscode. 
 
 
 ## License 

@@ -57,7 +57,11 @@ class IndexManager(object):
 
     def open(self):
         # Quickly count files in project (include system files)
-        idx = QuickIndexer(self._extension.paths, self._extension.skip_tests)
+        idx = QuickIndexer(
+            self._extension.paths,
+            self._extension.skip_tests,
+            self._extension.ignore_folders
+        )
         idx.build()
 
         if self._read_checksum() != self._make_index_hashsum(idx.total_files):

@@ -18,6 +18,7 @@ class Extension(object):
 
         self._workspace_path = None  # .isort.cfg could be placed there
         self._paths = []
+        self._ignore_folders = []
         self._skip_tests = True
         self._temp_path = None
         self._index_manager = None
@@ -62,6 +63,16 @@ class Extension(object):
         self._paths = value
 
     @property
+    def ignore_folders(self):
+        return self._ignore_folders
+
+    @ignore_folders.setter
+    def ignore_folders(self, value):
+        if not isinstance(value, list):
+            raise TypeError('ignore folders must be list')
+        self._ignore_folders = value
+
+    @property
     def workspace_path(self):
         return self._workspace_path
 
@@ -93,6 +104,7 @@ class Extension(object):
             raise Exception('Restart to reconfigure it')
 
         self.paths = kwargs.get('paths', [])
+        self.ignore_folders = kwargs.get('ignoreFolders', [])
         self.skip_tests = bool(kwargs.get('skipTest', True))
         self.temp_path = kwargs.get('tempPath')
         self.workspace_path = kwargs.get('workspacePath')
@@ -137,7 +149,9 @@ class Extension(object):
                     package_path = os.path.sep.join(parts[:-1])
                     prefiexes.append(package_path)
 
-        idx = FileIndexer(self.paths, prefiexes, self.skip_tests)
+        idx = FileIndexer(
+            self.paths, prefiexes, self.skip_tests, self.ignore_folders
+        )
         idx.build(self._report_scan_progress)
 
         self._index_manager.remove_from_index(idx)
@@ -157,7 +171,7 @@ class Extension(object):
         
         self._index_manager.recreate_index()
         
-        idx = DirIndexer(self.paths, self.skip_tests)
+        idx = DirIndexer(self.paths, self.skip_tests, self.ignore_folders)
         idx.build(self._report_scan_progress)
         total_items = idx.get_power() or 1
 
